@@ -2,11 +2,11 @@
 # App (Project) Name
 name = "dioxus_rig_app"
 # Dioxus app title
-default_title = "Rig AI Chat"
+default_title = "Agent Maker"
 # App id (for macOS and Android)
 app_id = "com.dioxus.rig"
 
 [web.app]
 # HTML title tag content
-title = "Rig AI Chat"
+title = "Agent Maker"
 

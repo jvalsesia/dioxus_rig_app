@@ -35,6 +35,10 @@ pub fn AgentList() -> Element {
             div { class: "chat-header",
                 h2 { "Agent Maker" }
                 p { "Create and interact with specialized AI agents." }
+                p {
+                    style: "font-size: 0.8rem; justify-self: right",
+                    "Built 100% in Rust with Dioxus and Rig" 
+                }
             }
 
             div { class: "create-agent-card",
