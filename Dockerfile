@@ -19,7 +19,7 @@ COPY . .
 RUN dx build --release
 
 # Final runtime image
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 WORKDIR /app
 
