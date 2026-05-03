@@ -1,0 +1,12 @@
+[build]
+builder = "docker"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Tell Railway how to healthcheck the service if needed, but defaults are fine
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[env]
+# Railway will automatically set the PORT variable, but it's good practice to document expected ones
+# OPENAI_API_KEY must be set in the Railway Dashboard Variables securely
