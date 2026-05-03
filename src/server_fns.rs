@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 #[server]
-pub async fn chat_with_agent(prompt: String) -> Result<String, ServerFnError> {
+pub async fn chat_with_agent(prompt: String, preamble: String) -> Result<String, ServerFnError> {
     use rig::{completion::Prompt, providers::openai};
     use rig::client::{ProviderClient, CompletionClient};
 
@@ -10,10 +10,10 @@ pub async fn chat_with_agent(prompt: String) -> Result<String, ServerFnError> {
         Err(_) => return Err(ServerFnError::new("OPENAI_API_KEY environment variable not set. Please set it to use the AI chat.")),
     };
 
-    // Build the agent with a general AI personality
+    // Build the agent with a custom AI personality
     let agent = openai_client
         .agent("gpt-4o-mini") // Using a fast, modern model
-        .preamble("You are a helpful, friendly, and highly capable general AI assistant. You provide concise and accurate answers.")
+        .preamble(&preamble)
         .build();
 
     // Prompt the agent

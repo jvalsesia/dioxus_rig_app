@@ -1,3 +1,4 @@
+use crate::{Agent, Route};
 use crate::server_fns::chat_with_agent;
 use dioxus::prelude::*;
 
@@ -8,17 +9,33 @@ struct Message {
 }
 
 #[component]
-pub fn Chat() -> Element {
+pub fn Chat(id: String) -> Element {
+    let agents = use_context::<Signal<Vec<Agent>>>();
+    
+    // Find the agent by id
+    let agent_opt = agents.read().iter().find(|a| a.id == id).cloned();
+    
+    let (agent_name, agent_specialty) = match agent_opt {
+        Some(a) => (a.name, a.specialty),
+        None => ("Unknown Agent".to_string(), "I don't know who I am.".to_string())
+    };
+
+    let specialty_for_keydown = agent_specialty.clone();
+    let specialty_for_click = agent_specialty.clone();
+    let name_clone = agent_name.clone();
+
+    // Use use_hook so we don't recreate the initial message on every render if state changes
     let messages = use_signal(|| {
         vec![Message {
             role: "assistant".to_string(),
-            content: "Hello! I am your AI assistant. How can I help you today?".to_string(),
+            content: format!("Hello! I am {}. How can I help you today?", name_clone),
         }]
     });
+    
     let mut current_input = use_signal(|| String::new());
     let is_loading = use_signal(|| false);
 
-    let do_submit = move |mut messages: Signal<Vec<Message>>, mut current_input: Signal<String>, mut is_loading: Signal<bool>| {
+    let do_submit = move |mut messages: Signal<Vec<Message>>, mut current_input: Signal<String>, mut is_loading: Signal<bool>, specialty: String| {
         let text = current_input.read().clone();
         if text.trim().is_empty() {
             return;
@@ -32,7 +49,7 @@ pub fn Chat() -> Element {
         *is_loading.write() = true;
 
         spawn(async move {
-            match chat_with_agent(text).await {
+            match chat_with_agent(text, specialty).await {
                 Ok(response) => {
                     messages.write().push(Message {
                         role: "assistant".to_string(),
@@ -53,8 +70,15 @@ pub fn Chat() -> Element {
     rsx! {
         div { class: "chat-container",
             div { class: "chat-header",
-                h2 { "Rig AI Assistant" }
-                p { "Powered by OpenAI & Rig Core" }
+                div { class: "header-actions",
+                    Link {
+                        to: Route::AgentList {},
+                        class: "back-button",
+                        "← Back to Agents"
+                    }
+                }
+                h2 { "Chat with {agent_name}" }
+                p { "Specialty: {agent_specialty}" }
             }
             div { class: "chat-messages",
                 for msg in messages.read().iter() {
@@ -81,14 +105,18 @@ pub fn Chat() -> Element {
                     value: "{current_input}",
                     oninput: move |evt| *current_input.write() = evt.value(),
                     onkeydown: move |evt| {
+                        let spec = specialty_for_keydown.clone();
                         if evt.key() == Key::Enter {
-                            do_submit(messages, current_input, is_loading);
+                            do_submit(messages, current_input, is_loading, spec);
                         }
                     }
                 }
                 button {
                     class: "send-button",
-                    onclick: move |_| do_submit(messages, current_input, is_loading),
+                    onclick: move |_| {
+                        let spec = specialty_for_click.clone();
+                        do_submit(messages, current_input, is_loading, spec)
+                    },
                     disabled: *is_loading.read(),
                     "Send"
                 }
