@@ -1,10 +1,10 @@
 [build]
-builder = "docker"
+builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
 # Tell Railway how to healthcheck the service if needed, but defaults are fine
-restartPolicyType = "on_failure"
+restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [env]
