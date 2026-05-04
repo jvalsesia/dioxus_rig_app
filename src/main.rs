@@ -17,7 +17,9 @@ pub enum Route {
     Chat { id: String },
 }
 
-#[derive(Clone, PartialEq, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Agent {
     pub id: String,
     pub name: String,
@@ -32,16 +34,12 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    // Initialize global state for agents
-    use_context_provider(|| {
-        Signal::new(vec![
-            Agent {
-                id: "1".to_string(),
-                name: "General Assistant".to_string(),
-                specialty: "You are a helpful, friendly, and highly capable general AI assistant. You provide concise and accurate answers.".to_string(),
-            }
-        ])
+    // Initialize global state for agents from LanceDB
+    let agents_resource = use_resource(|| async move {
+        crate::server_fns::get_agents().await.unwrap_or_else(|_| vec![])
     });
+    
+    use_context_provider(|| agents_resource);
 
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }

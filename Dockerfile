@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
     curl \
+    protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the dioxus CLI (version 0.7.7 to match Cargo.toml)

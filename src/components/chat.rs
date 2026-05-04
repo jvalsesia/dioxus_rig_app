@@ -10,10 +10,10 @@ struct Message {
 
 #[component]
 pub fn Chat(id: String) -> Element {
-    let agents = use_context::<Signal<Vec<Agent>>>();
+    let agents_resource = use_context::<Resource<Vec<Agent>>>();
     
     // Find the agent by id
-    let agent_opt = agents.read().iter().find(|a| a.id == id).cloned();
+    let agent_opt = agents_resource.read().as_ref().and_then(|agents| agents.iter().find(|a| a.id == id).cloned());
     
     let (agent_name, agent_specialty) = match agent_opt {
         Some(a) => (a.name, a.specialty),
