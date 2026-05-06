@@ -16,10 +16,6 @@ RUN cargo install dioxus-cli --version 0.7.7
 # Copy the source code
 COPY . .
 
-# FIX: Limit Cargo to a single build job to prevent OOM (Out-Of-Memory) kills
-# when compiling heavy crates like `lance` or `datafusion` on Fly.io builders.
-ENV CARGO_BUILD_JOBS=1
-
 # Build the fullstack project for release using Dioxus CLI
 RUN dx build --release
 
