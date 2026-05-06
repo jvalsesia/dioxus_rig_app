@@ -1,6 +1,7 @@
 use crate::{Agent, Route};
 use crate::server_fns::chat_with_agent;
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 #[derive(Clone, PartialEq)]
 struct Message {
@@ -17,7 +18,7 @@ pub fn Chat(id: String) -> Element {
     
     let (agent_name, agent_specialty) = match agent_opt {
         Some(a) => (a.name, a.specialty),
-        None => ("Unknown Agent".to_string(), "I don't know who I am.".to_string())
+        None => (t!("unknown-agent"), t!("unknown-specialty"))
     };
 
     let specialty_for_keydown = agent_specialty.clone();
@@ -28,11 +29,11 @@ pub fn Chat(id: String) -> Element {
     let messages = use_signal(|| {
         vec![Message {
             role: "assistant".to_string(),
-            content: format!("Hello! I am {}. How can I help you today?", name_clone),
+            content: t!("hello-agent", name: name_clone),
         }]
     });
     
-    let mut current_input = use_signal(|| String::new());
+    let mut current_input = use_signal(String::new);
     let is_loading = use_signal(|| false);
 
     let do_submit = move |mut messages: Signal<Vec<Message>>, mut current_input: Signal<String>, mut is_loading: Signal<bool>, specialty: String| {
@@ -59,7 +60,7 @@ pub fn Chat(id: String) -> Element {
                 Err(e) => {
                     messages.write().push(Message {
                         role: "assistant".to_string(),
-                        content: format!("Error: {}", e),
+                        content: t!("error-prefix", error: e.to_string()),
                     });
                 }
             }
@@ -88,11 +89,11 @@ pub fn Chat(id: String) -> Element {
                     Link {
                         to: Route::AgentList {},
                         class: "back-button",
-                        "← Back to Agents"
+                        {t!("chat-back")}
                     }
                 }
-                h2 { "Chat with {agent_name}" }
-                p { "Specialty: {agent_specialty}" }
+                h2 { {t!("chat-title", name: agent_name.clone())} }
+                p { {t!("agent-specialty", specialty: agent_specialty.clone())} }
             }
             div { class: "chat-messages",
                 for msg in messages.read().iter() {
@@ -115,7 +116,7 @@ pub fn Chat(id: String) -> Element {
             div { class: "chat-input-area",
                 input {
                     class: "chat-input",
-                    placeholder: "Type your message...",
+                    placeholder: t!("chat-placeholder"),
                     value: "{current_input}",
                     oninput: move |evt| *current_input.write() = evt.value(),
                     onkeydown: move |evt| {
@@ -132,7 +133,7 @@ pub fn Chat(id: String) -> Element {
                         do_submit(messages, current_input, is_loading, spec)
                     },
                     disabled: *is_loading.read(),
-                    "Send"
+                    {t!("chat-send")}
                 }
             }
         }

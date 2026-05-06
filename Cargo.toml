@@ -13,6 +13,8 @@ rig-core = { version = "0.36.0", optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.52.1", features = ["full"], optional = true }
 uuid = { version = "1.23.1", features = ["v4"], optional = true }
+dioxus-i18n = "0.5.1"
+unic-langid = "0.9.5"
 
 [features]
 default = ["web", "server"]

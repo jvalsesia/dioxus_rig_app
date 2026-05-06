@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 use crate::Agent;
 
 #[derive(Props, Clone, PartialEq)]
@@ -9,8 +10,8 @@ pub struct CreateAgentModalProps {
 #[component]
 pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
     let mut agents_resource = use_context::<Resource<Vec<Agent>>>();
-    let mut new_name = use_signal(|| String::new());
-    let mut new_specialty = use_signal(|| String::new());
+    let mut new_name = use_signal(String::new);
+    let mut new_specialty = use_signal(String::new);
     let mut is_loading = use_signal(|| false);
 
     let create_agent = move |_| {
@@ -24,7 +25,7 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
         *is_loading.write() = true;
 
         spawn(async move {
-            if let Ok(_) = crate::server_fns::add_agent(name, specialty).await {
+            if crate::server_fns::add_agent(name, specialty).await.is_ok() {
                 agents_resource.restart();
                 *is_loading.write() = false;
                 props.onclose.call(());
@@ -38,21 +39,21 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
         div { class: "modal-overlay",
             div { class: "modal-content",
                 div { class: "modal-header",
-                    h3 { "Create a New Agent" }
+                    h3 { {t!("create-modal-title")} }
                     button { class: "close-button", onclick: move |_| props.onclose.call(()), "✕" }
                 }
                 div { class: "form-group",
-                    label { "Name" }
+                    label { {t!("create-modal-name")} }
                     input {
-                        placeholder: "e.g., Car Seller, Stock Manager...",
+                        placeholder: t!("create-modal-name-placeholder"),
                         value: "{new_name}",
                         oninput: move |evt| *new_name.write() = evt.value()
                     }
                 }
                 div { class: "form-group",
-                    label { "Specialty (Prompt)" }
+                    label { {t!("create-modal-specialty")} }
                     textarea {
-                        placeholder: "e.g., You are an aggressive car salesman...",
+                        placeholder: t!("create-modal-specialty-placeholder"),
                         value: "{new_specialty}",
                         oninput: move |evt| *new_specialty.write() = evt.value(),
                         rows: 3
@@ -63,9 +64,9 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
                     onclick: create_agent,
                     disabled: *is_loading.read(),
                     if *is_loading.read() {
-                        "Creating..."
+                        {t!("create-modal-creating")}
                     } else {
-                        "Create Agent"
+                        {t!("create-modal-submit")}
                     }
                 }
             }

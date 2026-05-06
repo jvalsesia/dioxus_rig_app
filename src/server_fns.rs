@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use crate::Agent;
+use dioxus_i18n::t;
 
 #[server]
 pub async fn chat_with_agent(prompt: String, preamble: String) -> Result<String, ServerFnError> {
@@ -22,7 +23,7 @@ pub async fn chat_with_agent(prompt: String, preamble: String) -> Result<String,
 }
 
 #[cfg(feature = "server")]
-async fn get_or_create_table() -> Result<lancedb::Table, ServerFnError> {
+async fn get_or_create_table(lang: &str) -> Result<lancedb::Table, ServerFnError> {
     use lancedb::connect;
     use arrow_schema::{Schema, Field, DataType};
     use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
@@ -43,11 +44,13 @@ async fn get_or_create_table() -> Result<lancedb::Table, ServerFnError> {
         Field::new("specialty", DataType::Utf8, false),
     ]));
 
-    // Create initial agent
+    let name = if lang == "pt-BR" { "Assistente Geral" } else { "General Assistant" };
+    let spec = if lang == "pt-BR" { "Você é um assistente geral de IA prestativo, amigável e altamente capaz. Você fornece respostas concisas e precisas." } else { "You are a helpful, friendly, and highly capable general AI assistant. You provide concise and accurate answers." };
+
     let id = Uuid::new_v4().to_string();
     let id_array = Arc::new(StringArray::from(vec![id]));
-    let name_array = Arc::new(StringArray::from(vec!["General Assistant".to_string()]));
-    let spec_array = Arc::new(StringArray::from(vec!["You are a helpful, friendly, and highly capable general AI assistant. You provide concise and accurate answers.".to_string()]));
+    let name_array = Arc::new(StringArray::from(vec![name.to_string()]));
+    let spec_array = Arc::new(StringArray::from(vec![spec.to_string()]));
     
     let batch = RecordBatch::try_new(
         schema.clone(),
@@ -61,9 +64,9 @@ async fn get_or_create_table() -> Result<lancedb::Table, ServerFnError> {
 }
 
 #[server]
-pub async fn get_agents() -> Result<Vec<Agent>, ServerFnError> {
+pub async fn get_agents(lang: String) -> Result<Vec<Agent>, ServerFnError> {
     use lancedb::query::ExecutableQuery;
-    let table = get_or_create_table().await?;
+    let table = get_or_create_table(&lang).await?;
     
     let mut stream = table.query().execute().await.map_err(|e: lancedb::Error| ServerFnError::new(e.to_string()))?;
     
@@ -96,7 +99,7 @@ pub async fn add_agent(name: String, specialty: String) -> Result<Agent, ServerF
     use std::sync::Arc;
     use uuid::Uuid;
 
-    let table = get_or_create_table().await?;
+    let table = get_or_create_table("en-US").await?;
     let schema = table.schema().await.map_err(|e| ServerFnError::new(e.to_string()))?;
     
     let id = Uuid::new_v4().to_string();
@@ -117,7 +120,7 @@ pub async fn add_agent(name: String, specialty: String) -> Result<Agent, ServerF
 
 #[server]
 pub async fn delete_agent(id: String) -> Result<(), ServerFnError> {
-    let table = get_or_create_table().await?;
+    let table = get_or_create_table("en-US").await?;
     table.delete(&format!("id = '{}'", id)).await.map_err(|e| ServerFnError::new(e.to_string()))?;
     Ok(())
 }
@@ -127,7 +130,7 @@ pub async fn update_agent(id: String, name: String, specialty: String) -> Result
     use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
     use std::sync::Arc;
 
-    let table = get_or_create_table().await?;
+    let table = get_or_create_table("en-US").await?;
     let schema = table.schema().await.map_err(|e| ServerFnError::new(e.to_string()))?;
     
     table.delete(&format!("id = '{}'", id)).await.map_err(|e| ServerFnError::new(e.to_string()))?;

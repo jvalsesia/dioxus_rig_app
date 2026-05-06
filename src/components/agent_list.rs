@@ -1,5 +1,6 @@
 use crate::{Agent, Route};
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 #[component]
 pub fn AgentList() -> Element {
@@ -7,8 +8,8 @@ pub fn AgentList() -> Element {
 
     rsx! {
         div { class: "dashboard-header",
-            h2 { "Agent Dashboard" }
-            p { "Manage your specialized AI agents." }
+            h2 { {t!("dashboard-title")} }
+            p { {t!("dashboard-subtitle")} }
         }
 
         div { class: "agent-cards-grid",
@@ -19,24 +20,24 @@ pub fn AgentList() -> Element {
                             span { class: "agent-emoji", "🤖" }
                         }
                         h4 { "{agent.name}" }
-                        p { class: "agent-specialty", "{agent.specialty}" }
+                        p { class: "agent-specialty", {t!("agent-specialty", specialty: agent.specialty.clone())} }
                         
                         div { class: "card-actions",
                             Link {
                                 to: Route::Chat { id: agent.id.clone() },
                                 class: "card-btn chat-btn",
-                                "💬 Chat"
+                                {t!("chat-btn")}
                             }
                             Link {
                                 to: Route::ManageAgent { id: agent.id.clone() },
                                 class: "card-btn manage-btn",
-                                "⚙️ Manage"
+                                {t!("manage-btn")}
                             }
                         }
                     }
                 }
             } else {
-                p { "Loading agents..." }
+                p { {t!("loading-agents")} }
             }
         }
     }
