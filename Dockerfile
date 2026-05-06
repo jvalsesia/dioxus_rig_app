@@ -16,6 +16,10 @@ RUN cargo install dioxus-cli --version 0.7.7
 # Copy the source code
 COPY . .
 
+# FIX: Limit Cargo to a single build job to prevent OOM (Out-Of-Memory) kills
+# when compiling heavy crates like `lance` or `datafusion` on Fly.io builders.
+ENV CARGO_BUILD_JOBS=1
+
 # Build the fullstack project for release using Dioxus CLI
 RUN dx build --release
 
@@ -36,9 +40,8 @@ COPY --from=builder /usr/src/app/target/dx/dioxus_rig_app/release/web /app
 # The default Dioxus fullstack port
 EXPOSE 8080
 
-# Set IP to 0.0.0.0 so Railway can route traffic to the container
+# Set IP to 0.0.0.0 so external networks can route traffic to the container
 ENV IP=0.0.0.0
 
 # The server executable is placed at the root of the output directory by the Dioxus CLI 
-# Wait, based on the `list_dir` output, there is a `server` executable directly in the `web` folder.
 CMD ["./server"]
