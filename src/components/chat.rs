@@ -67,6 +67,20 @@ pub fn Chat(id: String) -> Element {
         });
     };
 
+    use_effect(move || {
+        let _ = messages.read().len();
+        let _ = is_loading.read();
+        
+        let _ = document::eval(r#"
+            setTimeout(() => {
+                let container = document.querySelector('.chat-messages');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }, 50);
+        "#);
+    });
+
     rsx! {
         div { class: "chat-container",
             div { class: "chat-header",
