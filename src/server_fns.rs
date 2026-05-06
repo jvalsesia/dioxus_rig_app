@@ -114,3 +114,35 @@ pub async fn add_agent(name: String, specialty: String) -> Result<Agent, ServerF
     
     Ok(Agent { id, name, specialty })
 }
+
+#[server]
+pub async fn delete_agent(id: String) -> Result<(), ServerFnError> {
+    let table = get_or_create_table().await?;
+    table.delete(&format!("id = '{}'", id)).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    Ok(())
+}
+
+#[server]
+pub async fn update_agent(id: String, name: String, specialty: String) -> Result<Agent, ServerFnError> {
+    use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
+    use std::sync::Arc;
+
+    let table = get_or_create_table().await?;
+    let schema = table.schema().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    
+    table.delete(&format!("id = '{}'", id)).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let id_array = Arc::new(StringArray::from(vec![id.clone()]));
+    let name_array = Arc::new(StringArray::from(vec![name.clone()]));
+    let spec_array = Arc::new(StringArray::from(vec![specialty.clone()]));
+    
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![id_array as _, name_array as _, spec_array as _]
+    ).map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let reader = Box::new(RecordBatchIterator::new(vec![Ok(batch)], schema.clone())) as Box<dyn arrow_array::RecordBatchReader + Send>;
+    table.add(reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    
+    Ok(Agent { id, name, specialty })
+}
