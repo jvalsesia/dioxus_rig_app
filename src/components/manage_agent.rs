@@ -21,6 +21,10 @@ pub fn ManageAgent(id: String) -> Element {
     let mut edit_mode = use_signal(|| false);
     let mut edit_name = use_signal(|| agent.name.clone());
     let mut edit_specialty = use_signal(|| agent.specialty.clone());
+    let mut edit_n8n_send = use_signal(|| agent.n8n_webhook_send.clone().unwrap_or_default());
+    let mut edit_n8n_receive = use_signal(|| agent.n8n_webhook_receive.clone().unwrap_or_default());
+    let mut test_result = use_signal(|| "".to_string());
+    let mut is_testing = use_signal(|| false);
     let mut is_saving = use_signal(|| false);
 
     let delete_agent = {
@@ -42,10 +46,15 @@ pub fn ManageAgent(id: String) -> Element {
             let id = id.clone();
             let name = edit_name.read().clone();
             let specialty = edit_specialty.read().clone();
+            let n8n_send = edit_n8n_send.read().clone();
+            let n8n_recv = edit_n8n_receive.read().clone();
+            
+            let send_opt = if n8n_send.trim().is_empty() { None } else { Some(n8n_send) };
+            let recv_opt = if n8n_recv.trim().is_empty() { None } else { Some(n8n_recv) };
             
             *is_saving.write() = true;
             spawn(async move {
-                if crate::server_fns::update_agent(id, name, specialty).await.is_ok() {
+                if crate::server_fns::update_agent(id, name, specialty, send_opt, recv_opt).await.is_ok() {
                     agents_resource.restart();
                     *edit_mode.write() = false;
                 }
@@ -78,7 +87,47 @@ pub fn ManageAgent(id: String) -> Element {
                             rows: 4
                         }
                     }
-                    div { class: "manage-actions",
+                    h3 { style: "margin-top: 1.5rem; color: var(--text-primary); font-size: 1.25rem;", "n8n Configuration" }
+                    div { class: "form-group",
+                        label { "Webhook to Send Messages" }
+                        input {
+                            value: "{edit_n8n_send}",
+                            placeholder: "https://your-n8n.com/webhook/send",
+                            oninput: move |evt| *edit_n8n_send.write() = evt.value()
+                        }
+                    }
+                    div { class: "form-group",
+                        label { "Webhook to Receive Messages" }
+                        input {
+                            value: "{edit_n8n_receive}",
+                            placeholder: "https://your-n8n.com/webhook/receive",
+                            oninput: move |evt| *edit_n8n_receive.write() = evt.value()
+                        }
+                    }
+                    div { style: "margin-top: 0.5rem;",
+                        button {
+                            class: "action-button manage-btn",
+                            style: "width: 100%; max-width: 250px; font-size: 0.9rem;",
+                            disabled: *is_testing.read() || edit_n8n_send.read().trim().is_empty(),
+                            onclick: move |_| {
+                                let url = edit_n8n_send.read().clone();
+                                *is_testing.write() = true;
+                                *test_result.write() = "Testing connection...".to_string();
+                                spawn(async move {
+                                    match crate::server_fns::test_n8n_webhook(url).await {
+                                        Ok(msg) => *test_result.write() = msg,
+                                        Err(e) => *test_result.write() = format!("Error: {}", e),
+                                    }
+                                    *is_testing.write() = false;
+                                });
+                            },
+                            if *is_testing.read() { "Testing..." } else { "Test Send Connection" }
+                        }
+                        if !test_result.read().is_empty() {
+                            p { style: "margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);", "{test_result}" }
+                        }
+                    }
+                    div { class: "manage-actions", style: "margin-top: 1rem;",
                         button {
                             class: "create-button",
                             onclick: save_agent,

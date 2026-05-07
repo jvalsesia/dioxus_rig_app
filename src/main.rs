@@ -27,6 +27,7 @@ pub enum Route {
 fn SidebarLayout() -> Element {
     let mut show_create_modal = use_signal(|| false);
     let mut i18n = i18n();
+    let mut theme = use_context::<Signal<String>>();
 
     rsx! {
         div { class: "dashboard-layout",
@@ -56,8 +57,8 @@ fn SidebarLayout() -> Element {
                     }
                 }
                 
-                // Language Switcher
-                div { style: "margin-top: auto; padding-top: 2rem;",
+                // Language Switcher & Theme Switcher
+                div { style: "margin-top: auto; padding-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;",
                     select {
                         class: "lang-switcher",
                         onchange: move |evt| {
@@ -67,6 +68,25 @@ fn SidebarLayout() -> Element {
                         },
                         option { value: "pt-BR", selected: i18n.language().language.as_str() == "pt", "Português" }
                         option { value: "en-US", selected: i18n.language().language.as_str() == "en", "English" }
+                    }
+                    button {
+                        class: "lang-switcher",
+                        style: "display: flex; align-items: center; justify-content: center; gap: 0.5rem;",
+                        onclick: move |_| {
+                            let current = theme.read().clone();
+                            if current == "dark-mode" {
+                                *theme.write() = "light-mode".to_string();
+                            } else {
+                                *theme.write() = "dark-mode".to_string();
+                            }
+                        },
+                        if *theme.read() == "dark-mode" {
+                            span { class: "btn-icon", "☀️" }
+                            "Light Mode"
+                        } else {
+                            span { class: "btn-icon", "🌙" }
+                            "Dark Mode"
+                        }
                     }
                 }
             }
@@ -92,6 +112,8 @@ pub struct Agent {
     pub id: String,
     pub name: String,
     pub specialty: String,
+    pub n8n_webhook_send: Option<String>,
+    pub n8n_webhook_receive: Option<String>,
 }
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -127,9 +149,12 @@ fn App() -> Element {
     
     use_context_provider(|| agents_resource);
 
+    let theme = use_signal(|| "dark-mode".to_string());
+    use_context_provider(|| theme);
+
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-        div { class: "app-wrapper",
+        div { class: "app-wrapper {theme}",
             Router::<Route> {}
         }
     }
