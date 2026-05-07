@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 use crate::Agent;
-use dioxus_i18n::t;
 
 #[server]
 pub async fn chat_with_agent(prompt: String, preamble: String) -> Result<String, ServerFnError> {
@@ -173,10 +172,81 @@ pub async fn test_n8n_webhook(url: String) -> Result<String, ServerFnError> {
         .send()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
-    
+
     if res.status().is_success() {
         Ok("Connection successful!".to_string())
     } else {
         Err(ServerFnError::new(format!("Received status code: {}", res.status())))
+    }
+}
+
+#[server]
+pub async fn test_evolution_connection(url: String, api_key: String) -> Result<String, ServerFnError> {
+    let client = reqwest::Client::new();
+    let endpoint = format!("{}/instance/fetchInstances", url.trim_end_matches('/'));
+    let res = client.get(&endpoint)
+        .header("apikey", &api_key)
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    if res.status().is_success() {
+        Ok("✓ Connection successful!".to_string())
+    } else {
+        Err(ServerFnError::new(format!("Status {}", res.status())))
+    }
+}
+
+#[server]
+pub async fn verify_evolution_instance(url: String, api_key: String, instance: String) -> Result<String, ServerFnError> {
+    let client = reqwest::Client::new();
+    let endpoint = format!("{}/instance/connectionState/{}", url.trim_end_matches('/'), instance);
+    let res = client.get(&endpoint)
+        .header("apikey", &api_key)
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    if res.status().is_success() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+        Ok(format!("{:02}:{:02}:{:02}", (secs % 86400) / 3600, (secs % 3600) / 60, secs % 60))
+    } else {
+        Err(ServerFnError::new(format!("Status {}", res.status())))
+    }
+}
+
+#[server]
+pub async fn associate_evolution_webhook(
+    url: String,
+    api_key: String,
+    instance: String,
+    webhook_url: String,
+    ignore_groups: bool,
+) -> Result<String, ServerFnError> {
+    let client = reqwest::Client::new();
+    let endpoint = format!("{}/webhook/set/{}", url.trim_end_matches('/'), instance);
+    let events = if ignore_groups {
+        serde_json::json!(["MESSAGES_UPSERT"])
+    } else {
+        serde_json::json!(["MESSAGES_UPSERT", "GROUPS_UPSERT"])
+    };
+    let body = serde_json::json!({
+        "url": webhook_url,
+        "webhook_by_events": false,
+        "webhook_base64": false,
+        "events": events
+    });
+    let res = client.post(&endpoint)
+        .header("apikey", &api_key)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    if res.status().is_success() {
+        Ok("✓ Webhook associated successfully!".to_string())
+    } else {
+        Err(ServerFnError::new(format!("Status {}", res.status())))
     }
 }

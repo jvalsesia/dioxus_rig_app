@@ -6,25 +6,24 @@ use dioxus_i18n::t;
 pub fn ManageAgent(id: String) -> Element {
     let mut agents_resource = use_context::<Resource<Vec<Agent>>>();
     let navigator = use_navigator();
-    
-    // Find the agent
+
     let agent_opt = agents_resource.read().as_ref().and_then(|agents| {
         agents.iter().find(|a| a.id == id).cloned()
     });
 
     if agent_opt.is_none() {
-        return rsx! { div { {t!("loading-agents")} } };
+        return rsx! {
+            div { class: "flex-1 overflow-y-auto p-8",
+                p { class: "text-sm text-zinc-500", {t!("loading-agents")} }
+            }
+        };
     }
 
     let agent = agent_opt.unwrap();
-    
+
     let mut edit_mode = use_signal(|| false);
     let mut edit_name = use_signal(|| agent.name.clone());
     let mut edit_specialty = use_signal(|| agent.specialty.clone());
-    let mut edit_n8n_send = use_signal(|| agent.n8n_webhook_send.clone().unwrap_or_default());
-    let mut edit_n8n_receive = use_signal(|| agent.n8n_webhook_receive.clone().unwrap_or_default());
-    let mut test_result = use_signal(|| "".to_string());
-    let mut is_testing = use_signal(|| false);
     let mut is_saving = use_signal(|| false);
 
     let delete_agent = {
@@ -42,16 +41,15 @@ pub fn ManageAgent(id: String) -> Element {
 
     let save_agent = {
         let id = id.clone();
+        let existing_send = agent.n8n_webhook_send.clone();
+        let existing_receive = agent.n8n_webhook_receive.clone();
         move |_| {
             let id = id.clone();
             let name = edit_name.read().clone();
             let specialty = edit_specialty.read().clone();
-            let n8n_send = edit_n8n_send.read().clone();
-            let n8n_recv = edit_n8n_receive.read().clone();
-            
-            let send_opt = if n8n_send.trim().is_empty() { None } else { Some(n8n_send) };
-            let recv_opt = if n8n_recv.trim().is_empty() { None } else { Some(n8n_recv) };
-            
+            let send_opt = existing_send.clone();
+            let recv_opt = existing_receive.clone();
+
             *is_saving.write() = true;
             spawn(async move {
                 if crate::server_fns::update_agent(id, name, specialty, send_opt, recv_opt).await.is_ok() {
@@ -63,102 +61,77 @@ pub fn ManageAgent(id: String) -> Element {
         }
     };
 
+    let input_cls = "w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500/50 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-500/20 transition-all";
+
     rsx! {
-        div { class: "manage-agent-container",
-            div { class: "chat-header header-actions",
-                Link { to: Route::AgentList {}, class: "back-button", {t!("manage-back")} }
-            }
-            
-            div { class: "manage-card",
-                if *edit_mode.read() {
-                    h3 { {t!("manage-edit-title")} }
-                    div { class: "form-group",
-                        label { {t!("manage-edit-name")} }
-                        input {
-                            value: "{edit_name}",
-                            oninput: move |evt| *edit_name.write() = evt.value()
-                        }
+        div { class: "flex-1 overflow-y-auto p-8",
+            div { class: "max-w-2xl mx-auto",
+
+                div { class: "mb-6",
+                    Link {
+                        to: Route::AgentList {},
+                        class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 font-medium no-underline",
+                        {t!("manage-back")}
                     }
-                    div { class: "form-group",
-                        label { {t!("manage-edit-specialty")} }
-                        textarea {
-                            value: "{edit_specialty}",
-                            oninput: move |evt| *edit_specialty.write() = evt.value(),
-                            rows: 4
+                }
+
+                div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col gap-6 shadow-sm",
+
+                    if *edit_mode.read() {
+                        h3 { class: "text-xl font-semibold text-zinc-900 dark:text-zinc-100", {t!("manage-edit-title")} }
+
+                        div { class: "flex flex-col gap-1.5",
+                            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("manage-edit-name")} }
+                            input {
+                                class: "{input_cls}",
+                                value: "{edit_name}",
+                                oninput: move |evt| *edit_name.write() = evt.value()
+                            }
                         }
-                    }
-                    h3 { style: "margin-top: 1.5rem; color: var(--text-primary); font-size: 1.25rem;", "n8n Configuration" }
-                    div { class: "form-group",
-                        label { "Webhook to Send Messages" }
-                        input {
-                            value: "{edit_n8n_send}",
-                            placeholder: "https://your-n8n.com/webhook/send",
-                            oninput: move |evt| *edit_n8n_send.write() = evt.value()
+
+                        div { class: "flex flex-col gap-1.5",
+                            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("manage-edit-specialty")} }
+                            textarea {
+                                class: "{input_cls} resize-none",
+                                value: "{edit_specialty}",
+                                oninput: move |evt| *edit_specialty.write() = evt.value(),
+                                rows: 4
+                            }
                         }
-                    }
-                    div { class: "form-group",
-                        label { "Webhook to Receive Messages" }
-                        input {
-                            value: "{edit_n8n_receive}",
-                            placeholder: "https://your-n8n.com/webhook/receive",
-                            oninput: move |evt| *edit_n8n_receive.write() = evt.value()
+
+                        div { class: "flex gap-3",
+                            button {
+                                class: "bg-violet-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                onclick: save_agent,
+                                disabled: *is_saving.read(),
+                                if *is_saving.read() { {t!("manage-edit-saving")} } else { {t!("manage-edit-save")} }
+                            }
+                            button {
+                                class: "bg-transparent text-zinc-500 border border-zinc-200 dark:border-zinc-700 py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all",
+                                onclick: move |_| *edit_mode.write() = false,
+                                {t!("manage-edit-cancel")}
+                            }
                         }
-                    }
-                    div { style: "margin-top: 0.5rem;",
-                        button {
-                            class: "action-button manage-btn",
-                            style: "width: 100%; max-width: 250px; font-size: 0.9rem;",
-                            disabled: *is_testing.read() || edit_n8n_send.read().trim().is_empty(),
-                            onclick: move |_| {
-                                let url = edit_n8n_send.read().clone();
-                                *is_testing.write() = true;
-                                *test_result.write() = "Testing connection...".to_string();
-                                spawn(async move {
-                                    match crate::server_fns::test_n8n_webhook(url).await {
-                                        Ok(msg) => *test_result.write() = msg,
-                                        Err(e) => *test_result.write() = format!("Error: {}", e),
-                                    }
-                                    *is_testing.write() = false;
-                                });
-                            },
-                            if *is_testing.read() { "Testing..." } else { "Test Send Connection" }
-                        }
-                        if !test_result.read().is_empty() {
-                            p { style: "margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);", "{test_result}" }
-                        }
-                    }
-                    div { class: "manage-actions", style: "margin-top: 1rem;",
-                        button {
-                            class: "create-button",
-                            onclick: save_agent,
-                            disabled: *is_saving.read(),
-                            if *is_saving.read() { {t!("manage-edit-saving")} } else { {t!("manage-edit-save")} }
-                        }
-                        button {
-                            class: "cancel-button",
-                            onclick: move |_| *edit_mode.write() = false,
-                            {t!("manage-edit-cancel")}
-                        }
-                    }
-                } else {
-                    h2 { class: "agent-name-title", "{agent.name}" }
-                    p { class: "agent-specialty-text", "{agent.specialty}" }
-                    
-                    div { class: "manage-actions",
-                        Link {
-                            to: Route::Chat { id: id.clone() },
-                            class: "action-button chat-action",
-                            {t!("manage-start-chat")}
-                        }
-                        button {
-                            class: "action-button edit-action",
-                            onclick: move |_| *edit_mode.write() = true,
-                            {t!("manage-edit-btn")}
-                        }
-                        button {
-                            class: "action-button delete-action",
-                            onclick: delete_agent,
-                            {t!("manage-delete-btn")}
+                    } else {
+                        h2 { class: "text-3xl font-bold text-zinc-900 dark:text-zinc-100", "{agent.name}" }
+                        p { class: "text-zinc-500 leading-relaxed", "{agent.specialty}" }
+
+                        div { class: "flex gap-3",
+                            Link {
+                                to: Route::Chat { id: id.clone() },
+                                class: "flex-1 bg-violet-600 text-white py-2.5 px-4 rounded-xl font-semibold text-sm text-center hover:bg-violet-500 transition-all no-underline",
+                                {t!("manage-start-chat")}
+                            }
+                            button {
+                                class: "flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 py-2.5 px-4 rounded-xl font-semibold text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all",
+                                onclick: move |_| *edit_mode.write() = true,
+                                {t!("manage-edit-btn")}
+                            }
+                            button {
+                                class: "flex-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 py-2.5 px-4 rounded-xl font-semibold text-sm hover:bg-red-100 dark:hover:bg-red-500/20 transition-all",
+                                onclick: delete_agent,
+                                {t!("manage-delete-btn")}
+                            }
                         }
                     }
                 }

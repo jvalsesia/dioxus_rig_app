@@ -484,16 +484,25 @@ body {
 }
 
 .chat-btn {
-  background: var(--accent-color);
-  color: white;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
-.chat-btn:hover { background: var(--accent-hover); }
+.chat-btn:hover { background: rgba(59, 130, 246, 0.25); }
 
 .manage-btn {
-  background: var(--button-bg-light);
-  color: var(--text-primary);
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
 }
-.manage-btn:hover { background: var(--button-bg-lighter); }
+.manage-btn:hover { background: rgba(56, 189, 248, 0.25); }
+
+.deploy-btn {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.deploy-btn:hover { background: rgba(16, 185, 129, 0.25); }
 
 /* Modal Styles */
 .modal-overlay {
@@ -689,6 +698,93 @@ body {
 .cancel-button:hover {
   background: var(--button-hover-bg);
   color: var(--white);
+}
+
+/* Evolution API section */
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--panel-border);
+  margin: 0.5rem 0;
+}
+
+.section-title {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.inline-action-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.status-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+}
+
+.status-success {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.status-error {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.status-neutral {
+  color: var(--text-secondary);
+  background: var(--button-hover-bg);
+  border: 1px solid var(--panel-border);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color);
+  cursor: pointer;
+}
+
+.checkbox-row label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-group select,
+.form-select {
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.form-group select:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--new-agent-btn-hover-bg);
 }
 
 /* Responsive */

@@ -10,6 +10,7 @@ pub mod server_fns;
 use components::chat::Chat;
 use components::agent_list::AgentList;
 use components::manage_agent::ManageAgent;
+use components::deploy_agent::DeployAgent;
 
 #[derive(Clone, Routable, Debug, PartialEq)]
 #[rustfmt::skip]
@@ -21,81 +22,84 @@ pub enum Route {
     Chat { id: String },
     #[route("/manage/:id")]
     ManageAgent { id: String },
+    #[route("/deploy/:id")]
+    DeployAgent { id: String },
 }
 
 #[component]
 fn SidebarLayout() -> Element {
     let mut show_create_modal = use_signal(|| false);
     let mut i18n = i18n();
-    let mut theme = use_context::<Signal<String>>();
+    let mut is_dark = use_context::<Signal<bool>>();
 
     rsx! {
-        div { class: "dashboard-layout",
-            // Sidebar
-            div { class: "sidebar",
-                div { class: "sidebar-header",
-                    img { 
-                        src: LOGO, 
-                        alt: "Agents Wizard Logo", 
-                        style: "width: 100%; max-width: 120px; height: auto; display: block; margin-bottom: 1rem;" 
+        div { class: "flex h-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950",
+
+            // ── Sidebar ──────────────────────────────────────────────────────
+            div { class: "w-64 shrink-0 flex flex-col bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 p-6",
+
+                // Logo + title
+                div { class: "flex flex-col items-center text-center mb-8",
+                    img {
+                        src: LOGO,
+                        alt: "Agents Wizard Logo",
+                        class: "w-24 mb-4"
                     }
-                    h2 { {t!("app-title")} }
-                    p { {t!("app-subtitle")} }
+                    h2 { class: "text-lg font-bold text-zinc-900 dark:text-zinc-100", {t!("app-title")} }
+                    p { class: "text-xs text-zinc-500 mt-0.5", {t!("app-subtitle")} }
                 }
-                div { class: "sidebar-nav",
+
+                // Navigation
+                div { class: "flex flex-col gap-2 flex-1",
                     Link {
                         to: Route::AgentList {},
-                        class: "nav-btn",
-                        span { class: "btn-icon", "🏠" }
+                        class: "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all no-underline",
+                        span { class: "text-base", "🏠" }
                         {t!("nav-dashboard")}
                     }
                     button {
-                        class: "new-agent-btn",
+                        class: "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 border border-dashed border-violet-300 dark:border-violet-500/40 bg-violet-50 dark:bg-violet-500/5 hover:bg-violet-100 dark:hover:bg-violet-500/15 hover:border-violet-400 dark:hover:border-violet-500 transition-all cursor-pointer w-full",
                         onclick: move |_| *show_create_modal.write() = true,
-                        span { class: "btn-icon", "➕" }
+                        span { class: "text-base", "➕" }
                         {t!("nav-new-agent")}
                     }
                 }
-                
-                // Language Switcher & Theme Switcher
-                div { style: "margin-top: auto; padding-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;",
+
+                // Language + theme controls
+                div { class: "mt-auto flex flex-col gap-2 pt-6 border-t border-zinc-200 dark:border-zinc-800",
                     select {
-                        class: "lang-switcher",
+                        class: "w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm rounded-xl px-3 py-2.5 outline-none cursor-pointer",
                         onchange: move |evt| {
-                            if let Ok(parsed_langid) = evt.value().parse::<unic_langid::LanguageIdentifier>() {
-                                i18n.set_language(parsed_langid);
+                            if let Ok(parsed) = evt.value().parse::<unic_langid::LanguageIdentifier>() {
+                                i18n.set_language(parsed);
                             }
                         },
                         option { value: "pt-BR", selected: i18n.language().language.as_str() == "pt", "Português" }
                         option { value: "en-US", selected: i18n.language().language.as_str() == "en", "English" }
                     }
                     button {
-                        class: "lang-switcher",
-                        style: "display: flex; align-items: center; justify-content: center; gap: 0.5rem;",
+                        class: "w-full flex items-center justify-center gap-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm rounded-xl px-3 py-2.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all cursor-pointer",
                         onclick: move |_| {
-                            let current = theme.read().clone();
-                            if current == "dark-mode" {
-                                *theme.write() = "light-mode".to_string();
-                            } else {
-                                *theme.write() = "dark-mode".to_string();
-                            }
+                            let current = *is_dark.read();
+                            *is_dark.write() = !current;
                         },
-                        if *theme.read() == "dark-mode" {
-                            span { class: "btn-icon", "☀️" }
+                        if *is_dark.read() {
+                            span { "☀️" }
                             "Light Mode"
                         } else {
-                            span { class: "btn-icon", "🌙" }
+                            span { "🌙" }
                             "Dark Mode"
                         }
                     }
                 }
             }
 
-            // Main Content Area where the route's components will render
-            div { class: "main-content",
+            // ── Main content ─────────────────────────────────────────────────
+            div { class: "flex-1 flex flex-col min-h-0 bg-zinc-50 dark:bg-zinc-950",
                 Outlet::<Route> {}
             }
-            
+
+            // ── Create agent modal ────────────────────────────────────────────
             if *show_create_modal.read() {
                 components::create_agent_modal::CreateAgentModal {
                     onclose: move |_| *show_create_modal.write() = false
@@ -116,7 +120,7 @@ pub struct Agent {
     pub n8n_webhook_receive: Option<String>,
 }
 
-const MAIN_CSS: Asset = asset!("/assets/main.css");
+const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 const LOGO: Asset = asset!("/assets/agents_wizard_logo.png");
 
 fn main() {
@@ -139,23 +143,30 @@ fn App() -> Element {
 
     let lang_str = i18n.language().to_string();
 
-    // Initialize global state for agents from LanceDB
     let agents_resource = use_resource(move || {
         let l = lang_str.clone();
         async move {
             crate::server_fns::get_agents(l).await.unwrap_or_else(|_| vec![])
         }
     });
-    
     use_context_provider(|| agents_resource);
 
-    let theme = use_signal(|| "dark-mode".to_string());
-    use_context_provider(|| theme);
+    // true = dark, false = light; starts dark
+    let mut is_dark = use_signal(|| true);
+    use_context_provider(|| is_dark);
+
+    // Keep the `dark` class on <html> in sync with the signal
+    use_effect(move || {
+        let script = if *is_dark.read() {
+            "document.documentElement.classList.add('dark');"
+        } else {
+            "document.documentElement.classList.remove('dark');"
+        };
+        let _ = document::eval(script);
+    });
 
     rsx! {
-        document::Link { rel: "stylesheet", href: MAIN_CSS }
-        div { class: "app-wrapper {theme}",
-            Router::<Route> {}
-        }
+        document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+        Router::<Route> {}
     }
 }

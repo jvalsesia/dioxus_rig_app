@@ -31,6 +31,29 @@ manage-start-chat = 💬 Iniciar Conversa
 manage-edit-btn = ✏️ Editar
 manage-delete-btn = 🗑️ Excluir
 
+deploy-btn = 🚀 Implantar
+deploy-back = ← Voltar ao Painel
+deploy-title = Implantar Agente
+deploy-webhook-send = Webhook para Enviar Mensagens
+deploy-webhook-receive = Webhook para Receber Mensagens
+deploy-save = Salvar
+deploy-saving = Salvando...
+deploy-test-send = Testar Conexão de Envio
+deploy-testing = Testando...
+deploy-cancel = Cancelar
+
+deploy-evo-title = Evolution API
+deploy-evo-url = URL do Evolution API
+deploy-evo-api-key = Chave de API
+deploy-evo-test = Testar Conexão
+deploy-evo-instance = Instância
+deploy-evo-verify = Verificar Agora
+deploy-evo-verifying = Verificando...
+deploy-evo-last-verification = Última Verificação: { $time }
+deploy-evo-ignore-groups = Ignorar mensagens de grupo
+deploy-evo-associate = Associar Webhook
+deploy-evo-associating = Associando...
+
 chat-back = ← Voltar aos Agentes
 chat-title = Conversando com {$name}
 chat-placeholder = Digite sua mensagem...
