@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 arrow-array = { version = "57.3.0", optional = true }
 arrow-schema = { version = "57.3.0", optional = true }
-dioxus = { version = "0.7.7", features = ["router", "fullstack"] }
+dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
 futures = { version = "0.3.32", optional = true }
 lancedb = { version = "0.27.2", optional = true }
 rig-core = { version = "0.36.0", optional = true }
