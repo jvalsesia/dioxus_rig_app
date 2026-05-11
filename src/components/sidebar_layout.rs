@@ -41,6 +41,12 @@ pub fn SidebarLayout() -> Element {
                         span { class: "text-base", "➕" }
                         {t!("nav-new-agent")}
                     }
+                    Link {
+                        to: Route::Skills {},
+                        class: "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all no-underline",
+                        span { class: "text-base", "🧩" }
+                        {t!("nav-skills")}
+                    }
                 }
 
                 // Language + theme controls

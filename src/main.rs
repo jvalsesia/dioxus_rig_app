@@ -12,6 +12,7 @@ use components::chat::Chat;
 use components::deploy_agent::DeployAgent;
 use components::manage_agent::ManageAgent;
 use components::sidebar_layout::SidebarLayout;
+use components::skills::Skills;
 use serde::{Deserialize, Serialize};
 
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
@@ -28,6 +29,8 @@ pub enum Route {
     ManageAgent { id: String },
     #[route("/deploy/:id")]
     DeployAgent { id: String },
+    #[route("/skills")]
+    Skills {},
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
