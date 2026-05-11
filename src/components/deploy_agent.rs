@@ -6,19 +6,21 @@ use dioxus_i18n::t;
 pub fn DeployAgent(id: String) -> Element {
     let mut agents_resource = use_context::<Resource<Vec<Agent>>>();
 
-    let agent_opt = agents_resource.read().as_ref().and_then(|agents| {
-        agents.iter().find(|a| a.id == id).cloned()
-    });
+    let agent_opt = agents_resource
+        .read()
+        .as_ref()
+        .and_then(|agents| agents.iter().find(|a| a.id == id).cloned());
 
     if agent_opt.is_none() {
         return rsx! {
-            div { class: "flex-1 overflow-y-auto p-8",
-                p { class: "text-sm text-zinc-500", {t!("loading-agents")} }
+            div { class: "flex-1 overflow-y-auto px-10 py-12",
+                p { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-500", {t!("loading-agents")} }
             }
         };
     }
 
     let agent = agent_opt.unwrap();
+    let initial = agent.name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_else(|| "·".into());
 
     let mut edit_n8n_send    = use_signal(|| agent.n8n_webhook_send.clone().unwrap_or_default());
     let mut edit_n8n_receive = use_signal(|| agent.n8n_webhook_receive.clone().unwrap_or_default());
@@ -62,55 +64,74 @@ pub fn DeployAgent(id: String) -> Element {
         }
     };
 
-    // Shared class strings
-    let input_cls = "w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500/50 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-500/20 transition-all";
+    // ── Shared field styles
+    let input_cls = "w-full bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors";
 
-    let action_btn_cls = "bg-sky-50 dark:bg-sky-400/10 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-400/30 hover:bg-sky-100 dark:hover:bg-sky-400/20 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
+    let label_cls = "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500";
 
-    let status_ok_cls  = "text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-400/30";
-    let status_err_cls = "text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30";
+    let action_btn_cls = "bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 px-4 py-2.5 rounded-lg font-mono text-[11px] tracking-[0.22em] uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
+
+    let primary_btn_cls = "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50";
+
+    let status_ok_cls  = "font-mono text-[10px] tracking-[0.22em] uppercase px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-400/30";
+    let status_err_cls = "font-mono text-[10px] tracking-[0.22em] uppercase px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30";
 
     rsx! {
-        div { class: "flex-1 overflow-y-auto p-8",
-            div { class: "max-w-2xl mx-auto",
+        div { class: "flex-1 overflow-y-auto",
+            div { class: "max-w-3xl mx-auto px-10 py-12",
 
-                div { class: "mb-6",
+                // ── Breadcrumb ────────────────────────────────────────────────
+                div { class: "mb-8 flex items-baseline gap-3",
                     Link {
                         to: Route::AgentList {},
-                        class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 font-medium no-underline",
+                        class: "font-mono text-[11px] tracking-[0.22em] uppercase text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
                         {t!("deploy-back")}
+                    }
+                    span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+                    span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400",
+                        "Deploy"
                     }
                 }
 
-                div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col gap-6 shadow-sm",
-
-                    // ── Agent title ───────────────────────────────────────────
+                // ── Hero ─────────────────────────────────────────────────────
+                div { class: "flex items-center gap-5 mb-10 reveal",
+                    div { class: "monogram-ring w-20 h-20 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display italic text-4xl text-zinc-900 dark:text-zinc-100 shrink-0",
+                        "{initial}"
+                    }
                     div {
-                        h2 { class: "text-3xl font-bold text-zinc-900 dark:text-zinc-100", "{agent.name}" }
-                        h3 { class: "text-sm font-semibold text-zinc-500 mt-1", {t!("deploy-title")} }
+                        span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", "deploying" }
+                        h1 { class: "font-display text-4xl text-zinc-900 dark:text-zinc-100 leading-none mt-1", "{agent.name}" }
+                        p { class: "font-display italic text-sm text-zinc-500 mt-2", {t!("deploy-title")} }
+                    }
+                }
+
+                // ── n8n webhooks ─────────────────────────────────────────────
+                section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 flex flex-col gap-5 mb-6 reveal-1",
+                    div { class: "flex items-baseline gap-3",
+                        span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "01" }
+                        span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "n8n webhooks" }
+                        span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
                     }
 
-                    // ── n8n webhooks ──────────────────────────────────────────
-                    div { class: "flex flex-col gap-1.5",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("deploy-webhook-send")} }
+                    div { class: "flex flex-col gap-2",
+                        label { class: "{label_cls}", {t!("deploy-webhook-send")} }
                         input {
                             class: "{input_cls}",
                             value: "{edit_n8n_send}",
                             placeholder: "https://your-n8n.com/webhook/send",
-                            oninput: move |evt| *edit_n8n_send.write() = evt.value()
+                            oninput: move |evt| *edit_n8n_send.write() = evt.value(),
                         }
                     }
-                    div { class: "flex flex-col gap-1.5",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("deploy-webhook-receive")} }
+                    div { class: "flex flex-col gap-2",
+                        label { class: "{label_cls}", {t!("deploy-webhook-receive")} }
                         input {
                             class: "{input_cls}",
                             value: "{edit_n8n_receive}",
                             placeholder: "https://your-n8n.com/webhook/receive",
-                            oninput: move |evt| *edit_n8n_receive.write() = evt.value()
+                            oninput: move |evt| *edit_n8n_receive.write() = evt.value(),
                         }
                     }
 
-                    // Test send webhook
                     div { class: "flex items-center gap-3 flex-wrap",
                         button {
                             class: "{action_btn_cls}",
@@ -118,7 +139,7 @@ pub fn DeployAgent(id: String) -> Element {
                             onclick: move |_| {
                                 let url = edit_n8n_send.read().clone();
                                 *is_testing.write() = true;
-                                *test_result.write() = "Testing connection...".to_string();
+                                *test_result.write() = "Testing…".to_string();
                                 spawn(async move {
                                     match crate::server_fns::test_n8n_webhook(url).await {
                                         Ok(msg) => *test_result.write() = msg,
@@ -130,54 +151,54 @@ pub fn DeployAgent(id: String) -> Element {
                             if *is_testing.read() { {t!("deploy-testing")} } else { {t!("deploy-test-send")} }
                         }
                         if !test_result.read().is_empty() {
-                            p { class: "text-xs text-zinc-500", "{test_result}" }
+                            p { class: "font-mono text-[10px] tracking-[0.18em] uppercase text-zinc-500", "{test_result}" }
                         }
                     }
 
-                    // Save / Cancel
-                    div { class: "flex gap-3",
+                    div { class: "flex gap-3 pt-1",
                         button {
-                            class: "bg-violet-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                            class: "{primary_btn_cls}",
                             onclick: save_webhooks,
                             disabled: *is_saving.read(),
                             if *is_saving.read() { {t!("deploy-saving")} } else { {t!("deploy-save")} }
                         }
                         Link {
                             to: Route::AgentList {},
-                            class: "flex items-center justify-center bg-transparent text-zinc-500 border border-zinc-200 dark:border-zinc-700 py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all no-underline",
+                            class: "flex items-center justify-center px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] tracking-[0.22em] uppercase hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors no-underline",
                             {t!("deploy-cancel")}
                         }
                     }
+                }
 
-                    // ── Divider ───────────────────────────────────────────────
-                    div { class: "border-t border-zinc-200 dark:border-zinc-800" }
+                // ── Evolution API ────────────────────────────────────────────
+                section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 flex flex-col gap-5 reveal-2",
+                    div { class: "flex items-baseline gap-3",
+                        span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "02" }
+                        span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", {t!("deploy-evo-title")} }
+                        span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+                    }
 
-                    // ── Evolution API ─────────────────────────────────────────
-                    h3 { class: "text-base font-semibold text-zinc-700 dark:text-zinc-300", {t!("deploy-evo-title")} }
-
-                    div { class: "flex flex-col gap-1.5",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("deploy-evo-url")} }
+                    div { class: "flex flex-col gap-2",
+                        label { class: "{label_cls}", {t!("deploy-evo-url")} }
                         input {
                             r#type: "text",
                             class: "{input_cls}",
                             value: "{evo_url}",
                             placeholder: "http://localhost:8080",
-                            oninput: move |evt| *evo_url.write() = evt.value()
+                            oninput: move |evt| *evo_url.write() = evt.value(),
                         }
                     }
-
-                    div { class: "flex flex-col gap-1.5",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("deploy-evo-api-key")} }
+                    div { class: "flex flex-col gap-2",
+                        label { class: "{label_cls}", {t!("deploy-evo-api-key")} }
                         input {
                             r#type: "password",
                             class: "{input_cls}",
                             value: "{evo_api_key}",
                             placeholder: "••••••••••••••••••••",
-                            oninput: move |evt| *evo_api_key.write() = evt.value()
+                            oninput: move |evt| *evo_api_key.write() = evt.value(),
                         }
                     }
 
-                    // Test Evolution connection
                     div { class: "flex items-center gap-3 flex-wrap",
                         button {
                             class: "{action_btn_cls}",
@@ -205,18 +226,16 @@ pub fn DeployAgent(id: String) -> Element {
                         }
                     }
 
-                    // Instance selector
-                    div { class: "flex flex-col gap-1.5",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("deploy-evo-instance")} }
+                    div { class: "flex flex-col gap-2",
+                        label { class: "{label_cls}", {t!("deploy-evo-instance")} }
                         select {
-                            class: "w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:border-violet-400 cursor-pointer appearance-auto",
+                            class: "{input_cls} cursor-pointer",
                             value: "{evo_instance}",
                             onchange: move |evt| *evo_instance.write() = evt.value(),
-                            option { value: "chip-sales", "Chip Sales" }
+                            option { value: "chip-sales", "chip-sales" }
                         }
                     }
 
-                    // Verify instance
                     div { class: "flex items-center gap-3 flex-wrap",
                         button {
                             class: "{action_btn_cls}",
@@ -237,32 +256,30 @@ pub fn DeployAgent(id: String) -> Element {
                             if *is_verifying_evo.read() { {t!("deploy-evo-verifying")} } else { {t!("deploy-evo-verify")} }
                         }
                         if !evo_verify_time.read().is_empty() {
-                            span { class: "text-xs text-zinc-500 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-lg",
+                            span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-lg",
                                 {t!("deploy-evo-last-verification", time: evo_verify_time.read().clone())}
                             }
                         }
                     }
 
-                    // Ignore groups checkbox
                     div { class: "flex items-center gap-2 cursor-pointer",
                         input {
                             r#type: "checkbox",
                             id: "ignore-groups",
-                            class: "w-4 h-4 accent-violet-600 cursor-pointer",
+                            class: "w-4 h-4 accent-zinc-900 dark:accent-zinc-100 cursor-pointer",
                             checked: *ignore_groups.read(),
-                            onchange: move |evt| *ignore_groups.write() = evt.checked()
+                            onchange: move |evt| *ignore_groups.write() = evt.checked(),
                         }
                         label {
                             r#for: "ignore-groups",
-                            class: "text-sm text-zinc-500 cursor-pointer select-none",
+                            class: "text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer select-none",
                             {t!("deploy-evo-ignore-groups")}
                         }
                     }
 
-                    // Associate webhook
-                    div { class: "flex flex-col gap-3",
+                    div { class: "flex flex-col gap-3 pt-1",
                         button {
-                            class: "bg-violet-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-xs",
+                            class: "{primary_btn_cls} max-w-xs",
                             disabled: *is_associating.read(),
                             onclick: move |_| {
                                 let url  = evo_url.read().clone();

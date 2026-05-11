@@ -1,5 +1,5 @@
-use crate::{compose_preamble, Agent, Personality, Route};
 use crate::server_fns::chat_with_agent;
+use crate::{compose_preamble, Agent, Personality, Route};
 use dioxus::prelude::*;
 use dioxus_i18n::t;
 
@@ -13,14 +13,25 @@ struct Message {
 pub fn Chat(id: String) -> Element {
     let agents_resource = use_context::<Resource<Vec<Agent>>>();
 
-    let agent_opt = agents_resource.read().as_ref().and_then(|agents| {
-        agents.iter().find(|a| a.id == id).cloned()
-    });
+    let agent_opt = agents_resource
+        .read()
+        .as_ref()
+        .and_then(|agents| agents.iter().find(|a| a.id == id).cloned());
 
     let (agent_name, agent_specialty, agent_personality) = match agent_opt {
         Some(a) => (a.name, a.specialty, a.personality),
-        None => (t!("unknown-agent"), t!("unknown-specialty"), Personality::default()),
+        None => (
+            t!("unknown-agent"),
+            t!("unknown-specialty"),
+            Personality::default(),
+        ),
     };
+
+    let initial = agent_name
+        .chars()
+        .next()
+        .map(|c| c.to_uppercase().to_string())
+        .unwrap_or_else(|| "·".into());
 
     let preamble = compose_preamble(&agent_specialty, &agent_personality);
     let preamble_for_keydown = preamble.clone();
@@ -45,7 +56,10 @@ pub fn Chat(id: String) -> Element {
         if text.trim().is_empty() {
             return;
         }
-        messages.write().push(Message { role: "user".to_string(), content: text.clone() });
+        messages.write().push(Message {
+            role: "user".to_string(),
+            content: text.clone(),
+        });
         *current_input.write() = String::new();
         *is_loading.write() = true;
 
@@ -67,58 +81,100 @@ pub fn Chat(id: String) -> Element {
     use_effect(move || {
         let _ = messages.read().len();
         let _ = is_loading.read();
-        let _ = document::eval(r#"
+        let _ = document::eval(
+            r#"
             setTimeout(() => {
                 let el = document.getElementById('chat-messages');
                 if (el) el.scrollTop = el.scrollHeight;
             }, 50);
-        "#);
+        "#,
+        );
     });
 
     rsx! {
         div { class: "flex flex-col flex-1 min-h-0",
 
-            // Header
-            div { class: "px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shrink-0",
-                div { class: "mb-1.5",
+            // ── Header ────────────────────────────────────────────────────────
+            header { class: "px-10 pt-8 pb-5 border-b border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/40 backdrop-blur shrink-0",
+                div { class: "flex items-baseline gap-3 mb-3",
                     Link {
                         to: Route::AgentList {},
-                        class: "text-sm text-violet-600 dark:text-violet-400 font-medium hover:text-violet-500 dark:hover:text-violet-300 no-underline",
+                        class: "font-mono text-[11px] tracking-[0.22em] uppercase text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
                         {t!("chat-back")}
                     }
+                    span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+                    span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400",
+                        "Live session"
+                    }
                 }
-                h2 { class: "text-lg font-semibold text-zinc-900 dark:text-zinc-100",
-                    {t!("chat-title", name: agent_name.clone())}
+                div { class: "flex items-center gap-4",
+                    div { class: "monogram-ring w-14 h-14 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display italic text-2xl text-zinc-900 dark:text-zinc-100 shrink-0",
+                        "{initial}"
+                    }
+                    div { class: "flex-1 min-w-0",
+                        span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", "in conversation with" }
+                        h2 { class: "font-display text-3xl text-zinc-900 dark:text-zinc-100 leading-tight truncate",
+                            "{agent_name}"
+                        }
+                    }
                 }
-                p { class: "text-xs text-zinc-500 mt-0.5",
-                    {t!("agent-specialty", specialty: agent_specialty.clone())}
+                p { class: "mt-2 font-display italic text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2",
+                    "{agent_specialty}"
                 }
             }
 
-            // Message list
+            // ── Message list ──────────────────────────────────────────────────
             div {
                 id: "chat-messages",
-                class: "flex-1 overflow-y-auto p-6 flex flex-col gap-4 chat-scroll",
-                for msg in messages.read().iter() {
-                    div {
-                        class: if msg.role == "user" {
-                            "flex justify-end msg-fade-in"
-                        } else {
-                            "flex justify-start msg-fade-in"
-                        },
-                        div {
-                            class: if msg.role == "user" {
-                                "max-w-[80%] px-4 py-3 rounded-2xl rounded-br-none bg-violet-600 text-white text-sm leading-relaxed"
-                            } else {
-                                "max-w-[80%] px-4 py-3 rounded-2xl rounded-bl-none bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm leading-relaxed border border-zinc-200 dark:border-zinc-700"
-                            },
-                            "{msg.content}"
+                class: "flex-1 overflow-y-auto px-10 py-8 flex flex-col gap-4 chat-scroll bg-paper",
+                for (i, msg) in messages.read().iter().enumerate() {
+                    {
+                        let is_user = msg.role == "user";
+                        rsx! {
+                            div {
+                                key: "{i}",
+                                class: if is_user {
+                                    "flex justify-end gap-3 msg-fade-in"
+                                } else {
+                                    "flex justify-start gap-3 msg-fade-in"
+                                },
+                                if !is_user {
+                                    div { class: "monogram-ring w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display italic text-sm text-zinc-700 dark:text-zinc-200 shrink-0 mt-1",
+                                        "{initial}"
+                                    }
+                                }
+                                div { class: "max-w-[78%] flex flex-col gap-1",
+                                    span { class: if is_user {
+                                        "self-end font-mono text-[9px] tracking-[0.22em] uppercase text-zinc-400 dark:text-zinc-600"
+                                    } else {
+                                        "self-start font-mono text-[9px] tracking-[0.22em] uppercase text-zinc-400 dark:text-zinc-600"
+                                    },
+                                        if is_user { "you" } else { "{agent_name}" }
+                                    }
+                                    div {
+                                        class: if is_user {
+                                            "px-5 py-3 rounded-2xl rounded-br-md bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm leading-relaxed"
+                                        } else {
+                                            "px-5 py-3 rounded-2xl rounded-bl-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm leading-relaxed border border-zinc-200 dark:border-zinc-800"
+                                        },
+                                        "{msg.content}"
+                                    }
+                                }
+                                if is_user {
+                                    div { class: "w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-mono text-[10px] text-zinc-500 shrink-0 mt-1",
+                                        "YOU"
+                                    }
+                                }
+                            }
                         }
                     }
                 }
                 if *is_loading.read() {
-                    div { class: "flex justify-start msg-fade-in",
-                        div { class: "px-4 py-3 rounded-2xl rounded-bl-none bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex gap-1.5 items-center",
+                    div { class: "flex justify-start gap-3 msg-fade-in",
+                        div { class: "monogram-ring w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display italic text-sm text-zinc-700 dark:text-zinc-200 shrink-0 mt-1",
+                            "{initial}"
+                        }
+                        div { class: "px-5 py-3 rounded-2xl rounded-bl-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex gap-1.5 items-center",
                             span { class: "dot" }
                             span { class: "dot" }
                             span { class: "dot" }
@@ -127,10 +183,13 @@ pub fn Chat(id: String) -> Element {
                 }
             }
 
-            // Input bar
-            div { class: "px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 flex gap-3 shrink-0",
+            // ── Input bar ────────────────────────────────────────────────────
+            div { class: "px-10 py-5 border-t border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 backdrop-blur flex gap-3 items-center shrink-0",
+                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400 hidden md:inline",
+                    "→"
+                }
                 input {
-                    class: "flex-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500/50 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-500/20 transition-all",
+                    class: "flex-1 bg-transparent border border-zinc-200 dark:border-zinc-800 px-5 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors",
                     placeholder: t!("chat-placeholder"),
                     value: "{current_input}",
                     oninput: move |evt| *current_input.write() = evt.value(),
@@ -142,7 +201,7 @@ pub fn Chat(id: String) -> Element {
                     }
                 }
                 button {
-                    class: "bg-violet-600 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0",
+                    class: "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-3 rounded-xl font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0",
                     onclick: move |_| {
                         let pre = preamble_for_click.clone();
                         do_submit(messages, current_input, is_loading, pre);

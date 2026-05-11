@@ -1,32 +1,89 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+/* ──────────────────────────────────────────────────────────────────────────────
+   Agents Wizard — Editorial-Technical Design System
+   Display:  Fraunces (variable serif, italic-capable)
+   Mono:     JetBrains Mono (technical metadata, indices, tracking)
+   Body:     Manrope (UI text)
+   ────────────────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@300;400;500;600;700&display=swap');
+
 @import "tailwindcss";
 
 @source "../src/**/*.rs";
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans:    'Manrope', system-ui, sans-serif;
+  --font-display: 'Fraunces', 'Times New Roman', serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 }
 
 @layer base {
   html {
-    font-family: Inter, system-ui, sans-serif;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+  }
+  body {
+    /* Paper-warm light surface; near-black ink for dark. */
+    background-color: #fafaf9;
+  }
+  .dark body {
+    background-color: #09090b;
+  }
+  /* Tighten serif headings and enable contextual alternates */
+  .font-display {
+    font-feature-settings: "ss01", "ss02";
+    letter-spacing: -0.02em;
   }
 }
 
+/* ── Atmospheric background: dotted lab paper ───────────────────────────────── */
+.bg-paper {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(24, 24, 27, 0.05) 1px, transparent 0);
+  background-size: 22px 22px;
+  background-position: 0 0;
+}
+.dark .bg-paper {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(244, 244, 245, 0.045) 1px, transparent 0);
+}
+
+/* Subtle horizontal hairline used in lieu of headings underline */
+.rule-hairline {
+  background-image: linear-gradient(to right,
+    rgba(24,24,27,0.18) 0%, rgba(24,24,27,0.18) 60%, transparent 100%);
+  height: 1px;
+}
+.dark .rule-hairline {
+  background-image: linear-gradient(to right,
+    rgba(244,244,245,0.22) 0%, rgba(244,244,245,0.22) 60%, transparent 100%);
+}
+
+/* ── Motion ─────────────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 @keyframes dotBounce {
   0%, 80%, 100% { transform: scale(0); }
   40%           { transform: scale(1); }
 }
-
-.msg-fade-in {
-  animation: fadeIn 0.35s ease forwards;
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.35); }
+  70%  { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
 }
+
+.msg-fade-in { animation: fadeIn 0.35s ease forwards; }
+.reveal      { animation: revealUp 0.55s cubic-bezier(.22,.61,.36,1) both; }
+.reveal-1    { animation: revealUp 0.55s cubic-bezier(.22,.61,.36,1) 0.05s both; }
+.reveal-2    { animation: revealUp 0.55s cubic-bezier(.22,.61,.36,1) 0.10s both; }
+.reveal-3    { animation: revealUp 0.55s cubic-bezier(.22,.61,.36,1) 0.15s both; }
+.reveal-4    { animation: revealUp 0.55s cubic-bezier(.22,.61,.36,1) 0.20s both; }
 
 .dot {
   width: 7px;
@@ -37,7 +94,93 @@
 .dot:nth-child(1) { animation-delay: -0.32s; }
 .dot:nth-child(2) { animation-delay: -0.16s; }
 
-.chat-scroll::-webkit-scrollbar       { width: 5px; }
+.pulse-violet { animation: pulseRing 2.4s infinite; }
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
+.chat-scroll::-webkit-scrollbar       { width: 5px; height: 5px; }
 .chat-scroll::-webkit-scrollbar-track { background: transparent; }
 .chat-scroll::-webkit-scrollbar-thumb { @apply bg-zinc-300 dark:bg-zinc-700 rounded-full; }
 .chat-scroll::-webkit-scrollbar-thumb:hover { @apply bg-zinc-400 dark:bg-zinc-600; }
+
+/* ── Tick marks beneath the personality slider ──────────────────────────────── */
+.tick-row {
+  background-image: linear-gradient(to right,
+    rgba(24,24,27,0.28) 0 1px, transparent 1px 25%);
+  background-size: 25% 6px;
+  background-repeat: repeat-x;
+  background-position: 0 0;
+  height: 6px;
+}
+.dark .tick-row {
+  background-image: linear-gradient(to right,
+    rgba(244,244,245,0.30) 0 1px, transparent 1px 25%);
+}
+
+/* ── Range input refinement (used by PersonalitySlider) ─────────────────────── */
+input[type="range"].slider-fine {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 14px;
+}
+input[type="range"].slider-fine::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, rgb(139 92 246) var(--p, 50%), rgb(228 228 231) var(--p, 50%));
+  border-radius: 999px;
+}
+.dark input[type="range"].slider-fine::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, rgb(139 92 246) var(--p, 50%), rgb(39 39 42) var(--p, 50%));
+}
+input[type="range"].slider-fine::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border-radius: 999px;
+  background: #18181b;
+  border: 2px solid #fafaf9;
+  box-shadow: 0 0 0 1px rgba(139,92,246,0.5);
+  cursor: pointer;
+}
+.dark input[type="range"].slider-fine::-webkit-slider-thumb {
+  background: #fafaf9;
+  border-color: #09090b;
+}
+input[type="range"].slider-fine::-moz-range-track {
+  height: 2px;
+  background: rgb(228 228 231);
+  border-radius: 999px;
+}
+.dark input[type="range"].slider-fine::-moz-range-track {
+  background: rgb(39 39 42);
+}
+input[type="range"].slider-fine::-moz-range-progress {
+  height: 2px;
+  background: rgb(139 92 246);
+  border-radius: 999px;
+}
+input[type="range"].slider-fine::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #18181b;
+  border: 2px solid #fafaf9;
+  box-shadow: 0 0 0 1px rgba(139,92,246,0.5);
+  cursor: pointer;
+}
+.dark input[type="range"].slider-fine::-moz-range-thumb {
+  background: #fafaf9;
+  border-color: #09090b;
+}
+
+/* Avatar monogram — soft inner gradient for life */
+.monogram-ring {
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(251,191,36,0.20), transparent 55%),
+    radial-gradient(120% 120% at 70% 80%, rgba(139,92,246,0.25), transparent 60%);
+}
+.dark .monogram-ring {
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(251,191,36,0.18), transparent 55%),
+    radial-gradient(120% 120% at 70% 80%, rgba(139,92,246,0.30), transparent 60%);
+}

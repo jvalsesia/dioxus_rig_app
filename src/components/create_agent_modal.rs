@@ -179,28 +179,41 @@ pub struct PersonalitySliderProps {
 #[component]
 pub fn PersonalitySlider(props: PersonalitySliderProps) -> Element {
     let pct = (props.value * 100.0).round() as i32;
+    let initial = props.label.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_default();
+    let style = format!("--p: {pct}%;");
     rsx! {
-        div { class: "flex flex-col gap-1",
-            div { class: "flex items-center justify-between",
-                span { class: "text-xs font-semibold text-zinc-700 dark:text-zinc-200", "{props.label}" }
-                span { class: "text-[11px] text-zinc-500 tabular-nums", "{pct}" }
+        div { class: "flex flex-col gap-1.5",
+            div { class: "flex items-center gap-3",
+                span { class: "shrink-0 w-7 h-7 rounded-md border border-amber-300/70 dark:border-amber-400/40 bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300 font-mono text-[11px] flex items-center justify-center",
+                    "{initial}"
+                }
+                span { class: "flex-1 font-display italic text-sm text-zinc-800 dark:text-zinc-200 truncate",
+                    title: "{props.low} ↔ {props.high}",
+                    "{props.label}"
+                }
+                span { class: "font-mono text-[11px] tabular-nums text-zinc-500 dark:text-zinc-400",
+                    "{pct}"
+                }
             }
-            input {
-                r#type: "range",
-                min: "0",
-                max: "100",
-                step: "1",
-                value: "{pct}",
-                class: "w-full accent-violet-600 cursor-pointer",
-                oninput: move |evt| {
-                    if let Ok(v) = evt.value().parse::<f32>() {
-                        props.on_change.call(v / 100.0);
-                    }
-                },
-            }
-            div { class: "flex items-center justify-between text-[10px] text-zinc-400",
-                span { "{props.low}" }
-                span { "{props.high}" }
+            div { class: "pl-10 flex flex-col gap-1",
+                input {
+                    r#type: "range",
+                    min: "0",
+                    max: "100",
+                    step: "1",
+                    value: "{pct}",
+                    style: "{style}",
+                    class: "slider-fine w-full cursor-pointer",
+                    oninput: move |evt| {
+                        if let Ok(v) = evt.value().parse::<f32>() {
+                            props.on_change.call(v / 100.0);
+                        }
+                    },
+                }
+                div { class: "flex items-center justify-between font-mono text-[9px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-600",
+                    span { "{props.low}" }
+                    span { "{props.high}" }
+                }
             }
         }
     }

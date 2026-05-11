@@ -13,11 +13,7 @@ pub fn CreateAgent() -> Element {
 
     let skills_resource = use_resource(move || {
         let l = lang_str.clone();
-        async move {
-            crate::server_fns::get_skills(l)
-                .await
-                .unwrap_or_default()
-        }
+        async move { crate::server_fns::get_skills(l).await.unwrap_or_default() }
     });
 
     let mut new_name = use_signal(String::new);
@@ -26,7 +22,9 @@ pub fn CreateAgent() -> Element {
     let mut is_loading = use_signal(|| false);
     let mut personality = use_signal(Personality::default);
 
-    let input_cls = "w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500/50 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-500/20 transition-all";
+    let input_cls = "w-full bg-transparent border-0 border-b border-zinc-300 dark:border-zinc-700 px-0 py-3 text-zinc-900 dark:text-zinc-100 text-lg placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 transition-colors font-display";
+
+    let textarea_cls = "w-full bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 resize-none transition-colors";
 
     let create_agent = move |_| {
         let name = new_name.read().clone();
@@ -47,9 +45,7 @@ pub fn CreateAgent() -> Element {
                     *is_loading.write() = false;
                     navigator.push(Route::AgentList {});
                 }
-                Err(_) => {
-                    *is_loading.write() = false;
-                }
+                Err(_) => *is_loading.write() = false,
             }
         });
     };
@@ -58,68 +54,85 @@ pub fn CreateAgent() -> Element {
     let skills: Vec<Skill> = skills_opt.clone().unwrap_or_default();
 
     rsx! {
-        div { class: "flex-1 overflow-y-auto p-8",
-            div { class: "max-w-5xl mx-auto",
+        div { class: "flex-1 overflow-y-auto",
+            div { class: "max-w-5xl mx-auto px-10 py-12",
 
-                // Header
-                header { class: "mb-6 flex items-start justify-between gap-4",
-                    div {
-                        h1 { class: "text-3xl font-bold text-zinc-900 dark:text-zinc-100", {t!("create-page-title")} }
-                        p { class: "text-sm text-zinc-500 mt-1 max-w-2xl", {t!("create-page-subtitle")} }
+                // ── Page head ─────────────────────────────────────────────────
+                header { class: "mb-12 reveal",
+                    div { class: "flex items-baseline gap-3 mb-2",
+                        span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400",
+                            "New entry · 01 / 03"
+                        }
+                        span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+                        Link {
+                            to: Route::AgentList {},
+                            class: "font-mono text-[11px] tracking-[0.22em] uppercase text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
+                            "← back"
+                        }
                     }
-                    Link {
-                        to: Route::AgentList {},
-                        class: "shrink-0 text-sm text-violet-600 dark:text-violet-400 font-medium hover:text-violet-500 dark:hover:text-violet-300 no-underline",
-                        {t!("manage-back")}
+                    h1 { class: "font-display text-5xl text-zinc-900 dark:text-zinc-100 leading-[0.95]",
+                        {t!("create-page-title")}
+                    }
+                    p { class: "mt-3 font-display italic text-base text-zinc-500 dark:text-zinc-400 max-w-2xl",
+                        {t!("create-page-subtitle")}
                     }
                 }
 
-                // Card: name + specialty
-                div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-5 shadow-sm mb-6",
-                    div { class: "flex flex-col gap-1.5",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-name")} }
-                        input {
-                            class: "{input_cls}",
-                            placeholder: t!("create-modal-name-placeholder"),
-                            value: "{new_name}",
-                            oninput: move |evt| *new_name.write() = evt.value(),
+                // ── 01 · Identity ─────────────────────────────────────────────
+                Section {
+                    index: "01",
+                    eyebrow: "Identity",
+                    title: t!("create-modal-title"),
+                    div { class: "flex flex-col gap-6",
+                        div { class: "flex flex-col gap-2",
+                            label { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", {t!("create-modal-name")} }
+                            input {
+                                class: "{input_cls}",
+                                placeholder: t!("create-modal-name-placeholder"),
+                                value: "{new_name}",
+                                oninput: move |evt| *new_name.write() = evt.value(),
+                            }
                         }
-                    }
-                    div { class: "flex flex-col gap-1.5",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-specialty")} }
-                        textarea {
-                            class: "{input_cls} resize-none",
-                            placeholder: t!("create-modal-specialty-placeholder"),
-                            value: "{new_specialty}",
-                            oninput: move |evt| *new_specialty.write() = evt.value(),
-                            rows: 4,
+                        div { class: "flex flex-col gap-2",
+                            label { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", {t!("create-modal-specialty")} }
+                            textarea {
+                                class: "{textarea_cls}",
+                                placeholder: t!("create-modal-specialty-placeholder"),
+                                value: "{new_specialty}",
+                                oninput: move |evt| *new_specialty.write() = evt.value(),
+                                rows: 5,
+                            }
                         }
                     }
                 }
 
-                // Two-column: Personality (left) + Skills (right)
-                div { class: "grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6",
+                // ── 02 · Personality + 03 · Skills (two columns) ──────────────
+                div { class: "grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6",
 
-                    // Personality
-                    div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-3 shadow-sm min-w-0",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-personality")} }
-                        p { class: "text-[11px] text-zinc-500 -mt-2", {t!("create-modal-personality-hint")} }
-                        div { class: "flex flex-col gap-3",
-                            PersonalitySlider { label: t!("trait-openness"), low: t!("trait-openness-low"), high: t!("trait-openness-high"), value: personality.read().openness, on_change: move |v| personality.write().openness = v }
-                            PersonalitySlider { label: t!("trait-conscientiousness"), low: t!("trait-conscientiousness-low"), high: t!("trait-conscientiousness-high"), value: personality.read().conscientiousness, on_change: move |v| personality.write().conscientiousness = v }
-                            PersonalitySlider { label: t!("trait-extraversion"), low: t!("trait-extraversion-low"), high: t!("trait-extraversion-high"), value: personality.read().extraversion, on_change: move |v| personality.write().extraversion = v }
-                            PersonalitySlider { label: t!("trait-agreeableness"), low: t!("trait-agreeableness-low"), high: t!("trait-agreeableness-high"), value: personality.read().agreeableness, on_change: move |v| personality.write().agreeableness = v }
-                            PersonalitySlider { label: t!("trait-emotional-stability"), low: t!("trait-emotional-stability-low"), high: t!("trait-emotional-stability-high"), value: personality.read().emotional_stability, on_change: move |v| personality.write().emotional_stability = v }
+                    Section {
+                        index: "02",
+                        eyebrow: "Personality",
+                        title: t!("create-modal-personality"),
+                        p { class: "font-display italic text-sm text-zinc-500 dark:text-zinc-500 mb-4",
+                            {t!("create-modal-personality-hint")}
+                        }
+                        div { class: "flex flex-col gap-5",
+                            PersonalitySlider { label: t!("trait-openness"),             low: t!("trait-openness-low"),             high: t!("trait-openness-high"),             value: personality.read().openness,             on_change: move |v| personality.write().openness = v }
+                            PersonalitySlider { label: t!("trait-conscientiousness"),    low: t!("trait-conscientiousness-low"),    high: t!("trait-conscientiousness-high"),    value: personality.read().conscientiousness,    on_change: move |v| personality.write().conscientiousness = v }
+                            PersonalitySlider { label: t!("trait-extraversion"),         low: t!("trait-extraversion-low"),         high: t!("trait-extraversion-high"),         value: personality.read().extraversion,         on_change: move |v| personality.write().extraversion = v }
+                            PersonalitySlider { label: t!("trait-agreeableness"),        low: t!("trait-agreeableness-low"),        high: t!("trait-agreeableness-high"),        value: personality.read().agreeableness,        on_change: move |v| personality.write().agreeableness = v }
+                            PersonalitySlider { label: t!("trait-emotional-stability"),  low: t!("trait-emotional-stability-low"),  high: t!("trait-emotional-stability-high"),  value: personality.read().emotional_stability,  on_change: move |v| personality.write().emotional_stability = v }
                         }
                     }
 
-                    // Skills
-                    div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-3 shadow-sm min-w-0 min-h-0",
-                        label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-skills")} }
+                    Section {
+                        index: "03",
+                        eyebrow: "Skills",
+                        title: t!("create-modal-skills"),
                         if skills.is_empty() {
-                            p { class: "text-xs text-zinc-500", {t!("create-modal-skills-empty")} }
+                            p { class: "font-display italic text-sm text-zinc-500", {t!("create-modal-skills-empty")} }
                         } else {
-                            ul { class: "chat-scroll flex flex-col gap-2 max-h-96 overflow-y-auto pr-2",
+                            ul { class: "chat-scroll flex flex-col gap-2 max-h-[26rem] overflow-y-auto pr-2",
                                 for skill in skills.iter() {
                                     {
                                         let sid = skill.id.clone();
@@ -128,24 +141,25 @@ pub fn CreateAgent() -> Element {
                                         rsx! {
                                             li {
                                                 key: "{skill.id}",
-                                                class: "flex items-start gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-500/50 transition-all cursor-pointer",
+                                                class: if checked {
+                                                    "group flex items-start gap-3 p-3 rounded-xl border border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-900 transition-colors cursor-pointer"
+                                                } else {
+                                                    "group flex items-start gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors cursor-pointer"
+                                                },
                                                 onclick: move |_| {
                                                     let sid = sid_click.clone();
                                                     let mut s = selected.write();
-                                                    if s.contains(&sid) {
-                                                        s.remove(&sid);
-                                                    } else {
-                                                        s.insert(sid);
-                                                    }
+                                                    if s.contains(&sid) { s.remove(&sid); } else { s.insert(sid); }
                                                 },
-                                                input {
-                                                    r#type: "checkbox",
-                                                    checked: checked,
-                                                    class: "mt-0.5 accent-violet-600 pointer-events-none",
-                                                    onchange: move |_| {},
+                                                span { class: if checked {
+                                                    "shrink-0 w-5 h-5 rounded border border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] flex items-center justify-center mt-0.5"
+                                                } else {
+                                                    "shrink-0 w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 mt-0.5"
+                                                },
+                                                    if checked { "✓" } else { "" }
                                                 }
                                                 div { class: "flex-1 min-w-0",
-                                                    p { class: "text-sm font-semibold text-zinc-900 dark:text-zinc-100", "{skill.name}" }
+                                                    p { class: "text-sm font-medium text-zinc-900 dark:text-zinc-100 font-display", "{skill.name}" }
                                                     p { class: "text-xs text-zinc-500 mt-0.5", "{skill.description}" }
                                                 }
                                             }
@@ -157,21 +171,55 @@ pub fn CreateAgent() -> Element {
                     }
                 }
 
-                // Action bar
-                div { class: "flex gap-3 justify-end",
-                    Link {
-                        to: Route::AgentList {},
-                        class: "bg-transparent text-zinc-500 border border-zinc-200 dark:border-zinc-700 py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all no-underline",
-                        {t!("manage-edit-cancel")}
+                // ── Action bar ───────────────────────────────────────────────
+                div { class: "mt-10 flex items-center justify-between gap-4",
+                    span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600",
+                        "End of entry"
                     }
-                    button {
-                        class: "bg-violet-600 text-white py-2.5 px-8 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-                        onclick: create_agent,
-                        disabled: *is_loading.read(),
-                        if *is_loading.read() { {t!("create-modal-creating")} } else { {t!("create-modal-submit")} }
+                    div { class: "flex gap-3",
+                        Link {
+                            to: Route::AgentList {},
+                            class: "px-6 py-3 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] tracking-[0.22em] uppercase hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors no-underline",
+                            {t!("manage-edit-cancel")}
+                        }
+                        button {
+                            class: "px-8 py-3 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50",
+                            onclick: create_agent,
+                            disabled: *is_loading.read(),
+                            if *is_loading.read() { {t!("create-modal-creating")} } else { {t!("create-modal-submit")} }
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+#[derive(Props, Clone, PartialEq)]
+struct SectionProps {
+    index: &'static str,
+    eyebrow: &'static str,
+    title: String,
+    children: Element,
+}
+
+#[component]
+fn Section(props: SectionProps) -> Element {
+    rsx! {
+        section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 reveal",
+            div { class: "flex items-baseline gap-3 mb-5",
+                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none",
+                    "{props.index}"
+                }
+                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600",
+                    "{props.eyebrow}"
+                }
+                span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+            }
+            h2 { class: "font-display text-2xl text-zinc-900 dark:text-zinc-100 mb-5",
+                "{props.title}"
+            }
+            {props.children}
         }
     }
 }

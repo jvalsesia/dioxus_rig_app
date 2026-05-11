@@ -1,7 +1,7 @@
-use crate::{Agent, Personality, Route, Skill};
 use crate::components::create_agent_modal::PersonalitySlider;
+use crate::{Agent, Personality, Route, Skill};
 use dioxus::prelude::*;
-use dioxus_i18n::{t, prelude::*};
+use dioxus_i18n::{prelude::*, t};
 use std::collections::HashSet;
 
 #[component]
@@ -9,19 +9,21 @@ pub fn ManageAgent(id: String) -> Element {
     let mut agents_resource = use_context::<Resource<Vec<Agent>>>();
     let navigator = use_navigator();
 
-    let agent_opt = agents_resource.read().as_ref().and_then(|agents| {
-        agents.iter().find(|a| a.id == id).cloned()
-    });
+    let agent_opt = agents_resource
+        .read()
+        .as_ref()
+        .and_then(|agents| agents.iter().find(|a| a.id == id).cloned());
 
     if agent_opt.is_none() {
         return rsx! {
-            div { class: "flex-1 overflow-y-auto p-8",
-                p { class: "text-sm text-zinc-500", {t!("loading-agents")} }
+            div { class: "flex-1 overflow-y-auto px-10 py-12",
+                p { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-500", {t!("loading-agents")} }
             }
         };
     }
 
     let agent = agent_opt.unwrap();
+    let initial = agent.name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_else(|| "·".into());
 
     let mut edit_mode = use_signal(|| false);
     let mut edit_name = use_signal(|| agent.name.clone());
@@ -65,93 +67,189 @@ pub fn ManageAgent(id: String) -> Element {
         }
     };
 
-    let input_cls = "w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500/50 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-500/20 transition-all";
+    let input_cls = "w-full bg-transparent border-0 border-b border-zinc-300 dark:border-zinc-700 px-0 py-2.5 text-zinc-900 dark:text-zinc-100 text-lg placeholder:text-zinc-400 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 transition-colors font-display";
+    let textarea_cls = "w-full bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 resize-none transition-colors";
 
     rsx! {
-        div { class: "flex-1 overflow-y-auto p-8",
-            div { class: "max-w-2xl mx-auto",
+        div { class: "flex-1 overflow-y-auto",
+            div { class: "max-w-4xl mx-auto px-10 py-12",
 
-                div { class: "mb-6",
+                // ── Top breadcrumb ────────────────────────────────────────────
+                div { class: "mb-8 flex items-baseline gap-3",
                     Link {
                         to: Route::AgentList {},
-                        class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 font-medium no-underline",
+                        class: "font-mono text-[11px] tracking-[0.22em] uppercase text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
                         {t!("manage-back")}
+                    }
+                    span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+                    span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400",
+                        "Manage"
                     }
                 }
 
-                div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col gap-6 shadow-sm mb-6",
-
-                    if *edit_mode.read() {
-                        h3 { class: "text-xl font-semibold text-zinc-900 dark:text-zinc-100", {t!("manage-edit-title")} }
-
-                        div { class: "flex flex-col gap-1.5",
-                            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("manage-edit-name")} }
+                // ── Editorial hero ────────────────────────────────────────────
+                div { class: "flex items-start gap-6 mb-10 reveal",
+                    div { class: "monogram-ring w-24 h-24 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display italic text-5xl text-zinc-900 dark:text-zinc-100 shrink-0",
+                        "{initial}"
+                    }
+                    div { class: "flex-1 min-w-0",
+                        span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-500", "agent file" }
+                        if *edit_mode.read() {
                             input {
-                                class: "{input_cls}",
+                                class: "{input_cls} text-5xl mt-1",
                                 value: "{edit_name}",
-                                oninput: move |evt| *edit_name.write() = evt.value()
+                                oninput: move |evt| *edit_name.write() = evt.value(),
+                            }
+                        } else {
+                            h1 { class: "font-display text-5xl text-zinc-900 dark:text-zinc-100 leading-none mt-1",
+                                "{agent.name}"
                             }
                         }
-
-                        div { class: "flex flex-col gap-1.5",
-                            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("manage-edit-specialty")} }
-                            textarea {
-                                class: "{input_cls} resize-none",
-                                value: "{edit_specialty}",
-                                oninput: move |evt| *edit_specialty.write() = evt.value(),
-                                rows: 4
-                            }
-                        }
-
-                        div { class: "flex flex-col gap-2",
-                            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-personality")} }
-                            PersonalitySlider { label: t!("trait-openness"), low: t!("trait-openness-low"), high: t!("trait-openness-high"), value: edit_personality.read().openness, on_change: move |v| edit_personality.write().openness = v }
-                            PersonalitySlider { label: t!("trait-conscientiousness"), low: t!("trait-conscientiousness-low"), high: t!("trait-conscientiousness-high"), value: edit_personality.read().conscientiousness, on_change: move |v| edit_personality.write().conscientiousness = v }
-                            PersonalitySlider { label: t!("trait-extraversion"), low: t!("trait-extraversion-low"), high: t!("trait-extraversion-high"), value: edit_personality.read().extraversion, on_change: move |v| edit_personality.write().extraversion = v }
-                            PersonalitySlider { label: t!("trait-agreeableness"), low: t!("trait-agreeableness-low"), high: t!("trait-agreeableness-high"), value: edit_personality.read().agreeableness, on_change: move |v| edit_personality.write().agreeableness = v }
-                            PersonalitySlider { label: t!("trait-emotional-stability"), low: t!("trait-emotional-stability-low"), high: t!("trait-emotional-stability-high"), value: edit_personality.read().emotional_stability, on_change: move |v| edit_personality.write().emotional_stability = v }
-                        }
-
-                        div { class: "flex gap-3",
-                            button {
-                                class: "bg-violet-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-                                onclick: save_agent,
-                                disabled: *is_saving.read(),
-                                if *is_saving.read() { {t!("manage-edit-saving")} } else { {t!("manage-edit-save")} }
-                            }
-                            button {
-                                class: "bg-transparent text-zinc-500 border border-zinc-200 dark:border-zinc-700 py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all",
-                                onclick: move |_| *edit_mode.write() = false,
-                                {t!("manage-edit-cancel")}
-                            }
-                        }
-                    } else {
-                        h2 { class: "text-3xl font-bold text-zinc-900 dark:text-zinc-100", "{agent.name}" }
-                        p { class: "text-zinc-500 leading-relaxed", "{agent.specialty}" }
-
-                        PersonalityReadout { personality: agent.personality }
-
-                        div { class: "flex gap-3",
-                            Link {
-                                to: Route::Chat { id: id.clone() },
-                                class: "flex-1 bg-violet-600 text-white py-2.5 px-4 rounded-xl font-semibold text-sm text-center hover:bg-violet-500 transition-all no-underline",
-                                {t!("manage-start-chat")}
-                            }
-                            button {
-                                class: "flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 py-2.5 px-4 rounded-xl font-semibold text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all",
-                                onclick: move |_| *edit_mode.write() = true,
-                                {t!("manage-edit-btn")}
-                            }
-                            button {
-                                class: "flex-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 py-2.5 px-4 rounded-xl font-semibold text-sm hover:bg-red-100 dark:hover:bg-red-500/20 transition-all",
-                                onclick: delete_agent,
-                                {t!("manage-delete-btn")}
+                        if !*edit_mode.read() {
+                            p { class: "font-display italic text-lg text-zinc-500 dark:text-zinc-400 mt-3 leading-relaxed",
+                                "{agent.specialty}"
                             }
                         }
                     }
+                }
+
+                // ── Action bar ───────────────────────────────────────────────
+                div { class: "flex flex-wrap gap-2 mb-10",
+                    if *edit_mode.read() {
+                        button {
+                            class: "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50",
+                            onclick: save_agent,
+                            disabled: *is_saving.read(),
+                            if *is_saving.read() { {t!("manage-edit-saving")} } else { {t!("manage-edit-save")} }
+                        }
+                        button {
+                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] tracking-[0.22em] uppercase hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors",
+                            onclick: move |_| *edit_mode.write() = false,
+                            {t!("manage-edit-cancel")}
+                        }
+                    } else {
+                        Link {
+                            to: Route::Chat { id: id.clone() },
+                            class: "px-6 py-2.5 rounded-lg bg-violet-600 text-white font-mono text-[11px] tracking-[0.22em] uppercase hover:bg-violet-500 transition-colors no-underline",
+                            {t!("manage-start-chat")}
+                        }
+                        button {
+                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] tracking-[0.22em] uppercase hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors",
+                            onclick: move |_| *edit_mode.write() = true,
+                            {t!("manage-edit-btn")}
+                        }
+                        button {
+                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 font-mono text-[11px] tracking-[0.22em] uppercase hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors",
+                            onclick: delete_agent,
+                            {t!("manage-delete-btn")}
+                        }
+                    }
+                }
+
+                if *edit_mode.read() {
+                    EditPanel {
+                        edit_specialty: edit_specialty,
+                        edit_personality: edit_personality,
+                        textarea_cls: textarea_cls.to_string(),
+                    }
+                } else {
+                    PersonalityEqualizer { personality: agent.personality }
                 }
 
                 AgentSkills { agent_id: id.clone() }
+            }
+        }
+    }
+}
+
+#[derive(Props, Clone, PartialEq)]
+struct EditPanelProps {
+    edit_specialty: Signal<String>,
+    edit_personality: Signal<Personality>,
+    textarea_cls: String,
+}
+
+#[component]
+fn EditPanel(props: EditPanelProps) -> Element {
+    let mut edit_specialty = props.edit_specialty;
+    let mut edit_personality = props.edit_personality;
+    let textarea_cls = props.textarea_cls;
+    rsx! {
+        section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 mb-6",
+            div { class: "flex items-baseline gap-3 mb-5",
+                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "01" }
+                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "Specialty" }
+                span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+            }
+            textarea {
+                class: "{textarea_cls}",
+                value: "{edit_specialty}",
+                oninput: move |evt| *edit_specialty.write() = evt.value(),
+                rows: 5,
+            }
+        }
+        section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 mb-6",
+            div { class: "flex items-baseline gap-3 mb-5",
+                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "02" }
+                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "Personality" }
+                span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+            }
+            div { class: "flex flex-col gap-5",
+                PersonalitySlider { label: t!("trait-openness"),            low: t!("trait-openness-low"),            high: t!("trait-openness-high"),            value: edit_personality.read().openness,            on_change: move |v| edit_personality.write().openness = v }
+                PersonalitySlider { label: t!("trait-conscientiousness"),   low: t!("trait-conscientiousness-low"),   high: t!("trait-conscientiousness-high"),   value: edit_personality.read().conscientiousness,   on_change: move |v| edit_personality.write().conscientiousness = v }
+                PersonalitySlider { label: t!("trait-extraversion"),        low: t!("trait-extraversion-low"),        high: t!("trait-extraversion-high"),        value: edit_personality.read().extraversion,        on_change: move |v| edit_personality.write().extraversion = v }
+                PersonalitySlider { label: t!("trait-agreeableness"),       low: t!("trait-agreeableness-low"),       high: t!("trait-agreeableness-high"),       value: edit_personality.read().agreeableness,       on_change: move |v| edit_personality.write().agreeableness = v }
+                PersonalitySlider { label: t!("trait-emotional-stability"), low: t!("trait-emotional-stability-low"), high: t!("trait-emotional-stability-high"), value: edit_personality.read().emotional_stability, on_change: move |v| edit_personality.write().emotional_stability = v }
+            }
+        }
+    }
+}
+
+/// Read-only Five-Factor display rendered as a vertical 5-column equalizer.
+#[component]
+fn PersonalityEqualizer(personality: Personality) -> Element {
+    let bars = [
+        ("O", t!("trait-openness"),            personality.openness),
+        ("C", t!("trait-conscientiousness"),   personality.conscientiousness),
+        ("E", t!("trait-extraversion"),        personality.extraversion),
+        ("A", t!("trait-agreeableness"),       personality.agreeableness),
+        ("N", t!("trait-emotional-stability"), personality.emotional_stability),
+    ];
+    rsx! {
+        section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 mb-6 reveal",
+            div { class: "flex items-baseline gap-3 mb-6",
+                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "01" }
+                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "Five-Factor signature" }
+                span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+                span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", "O · C · E · A · N" }
+            }
+            div { class: "grid grid-cols-5 gap-3",
+                for (initial, label, value) in bars.iter() {
+                    {
+                        let pct = (*value * 100.0).round() as i32;
+                        let height_style = format!("height: {}%;", pct.max(4));
+                        rsx! {
+                            div { key: "{initial}", class: "flex flex-col items-center gap-2",
+                                // Bar
+                                div { class: "relative w-full h-40 rounded-lg bg-zinc-100/60 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 overflow-hidden flex items-end",
+                                    div {
+                                        style: "{height_style}",
+                                        class: "w-full bg-gradient-to-t from-violet-600 to-violet-400 dark:from-violet-500 dark:to-violet-300",
+                                    }
+                                    span { class: "absolute top-2 left-2 font-mono text-[10px] text-zinc-500 tabular-nums",
+                                        "{pct}"
+                                    }
+                                    span { class: "absolute top-2 right-2 font-mono text-[10px] text-amber-600 dark:text-amber-400",
+                                        "{initial}"
+                                    }
+                                }
+                                span { class: "font-display italic text-xs text-center text-zinc-600 dark:text-zinc-300 leading-tight",
+                                    "{label}"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -164,12 +262,9 @@ fn AgentSkills(agent_id: String) -> Element {
 
     let all_skills_resource = use_resource(move || {
         let l = lang_str.clone();
-        async move {
-            crate::server_fns::get_skills(l).await.unwrap_or_default()
-        }
+        async move { crate::server_fns::get_skills(l).await.unwrap_or_default() }
     });
 
-    // None = still loading; Some(set) = ready for editing.
     let mut selected = use_signal(|| None::<HashSet<String>>);
     let mut is_saving = use_signal(|| false);
     let mut just_saved = use_signal(|| false);
@@ -178,9 +273,7 @@ fn AgentSkills(agent_id: String) -> Element {
     use_future(move || {
         let aid = aid_for_load.clone();
         async move {
-            let ids = crate::server_fns::get_agent_skill_ids(aid)
-                .await
-                .unwrap_or_default();
+            let ids = crate::server_fns::get_agent_skill_ids(aid).await.unwrap_or_default();
             selected.set(Some(ids.into_iter().collect()));
         }
     });
@@ -202,59 +295,58 @@ fn AgentSkills(agent_id: String) -> Element {
             spawn(async move {
                 let ok = crate::server_fns::set_agent_skills(aid, ids).await.is_ok();
                 is_saving.set(false);
-                if ok {
-                    just_saved.set(true);
-                }
+                if ok { just_saved.set(true); }
             });
         }
     };
 
-
     rsx! {
-        div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col gap-4 shadow-sm",
-            div {
-                h3 { class: "text-xl font-semibold text-zinc-900 dark:text-zinc-100", {t!("manage-skills-title")} }
-                p { class: "text-sm text-zinc-500 mt-1", {t!("manage-skills-subtitle")} }
+        section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 reveal",
+            div { class: "flex items-baseline gap-3 mb-5",
+                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "02" }
+                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "Skills" }
+                span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
             }
+            h2 { class: "font-display text-2xl text-zinc-900 dark:text-zinc-100 mb-1", {t!("manage-skills-title")} }
+            p { class: "font-display italic text-sm text-zinc-500 mb-5", {t!("manage-skills-subtitle")} }
 
             if !is_ready {
-                p { class: "text-sm text-zinc-500", {t!("manage-skills-saving")} }
+                p { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-500", {t!("manage-skills-saving")} }
             } else if all_skills.is_empty() {
-                p { class: "text-sm text-zinc-500", {t!("manage-skills-empty")} }
+                p { class: "font-display italic text-sm text-zinc-500", {t!("manage-skills-empty")} }
             } else {
-                ul { class: "flex flex-col gap-2",
+                ul { class: "flex flex-col gap-2 mb-5",
                     for skill in all_skills.iter() {
                         {
                             let sid = skill.id.clone();
                             let sid_for_click = sid.clone();
-                            let checked = selected.read().as_ref()
-                                .map(|s| s.contains(&sid))
-                                .unwrap_or(false);
+                            let checked = selected.read().as_ref().map(|s| s.contains(&sid)).unwrap_or(false);
                             rsx! {
                                 li {
                                     key: "{skill.id}",
-                                    class: "flex items-start gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-500/50 transition-all cursor-pointer",
+                                    class: if checked {
+                                        "flex items-start gap-3 p-3 rounded-xl border border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-900 cursor-pointer"
+                                    } else {
+                                        "flex items-start gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors cursor-pointer"
+                                    },
                                     onclick: move |_| {
                                         let sid = sid_for_click.clone();
                                         let mut s = selected.write();
                                         if let Some(set) = s.as_mut() {
-                                            if set.contains(&sid) {
-                                                set.remove(&sid);
-                                            } else {
-                                                set.insert(sid);
-                                            }
+                                            if set.contains(&sid) { set.remove(&sid); } else { set.insert(sid); }
                                         }
                                         drop(s);
                                         just_saved.set(false);
                                     },
-                                    input {
-                                        r#type: "checkbox",
-                                        checked: checked,
-                                        class: "mt-1 accent-violet-600 cursor-pointer pointer-events-none",
-                                        onchange: move |_| {},
+                                    span { class: if checked {
+                                        "shrink-0 w-5 h-5 rounded border border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] flex items-center justify-center mt-0.5"
+                                    } else {
+                                        "shrink-0 w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 mt-0.5"
+                                    },
+                                        if checked { "✓" } else { "" }
                                     }
                                     div { class: "flex-1 min-w-0",
-                                        p { class: "text-sm font-semibold text-zinc-900 dark:text-zinc-100", "{skill.name}" }
+                                        p { class: "text-sm font-medium text-zinc-900 dark:text-zinc-100 font-display", "{skill.name}" }
                                         p { class: "text-xs text-zinc-500 mt-0.5", "{skill.description}" }
                                     }
                                 }
@@ -263,48 +355,20 @@ fn AgentSkills(agent_id: String) -> Element {
                     }
                 }
 
-                div { class: "flex items-center gap-3 pt-2",
+                div { class: "flex items-center gap-3",
                     button {
-                        class: "bg-violet-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                        class: "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50",
                         onclick: save,
                         disabled: *is_saving.read(),
                         if *is_saving.read() { {t!("manage-skills-saving")} } else { {t!("manage-skills-save")} }
                     }
                     if *just_saved.read() {
-                        span { class: "text-xs text-emerald-600 dark:text-emerald-400 font-medium",
+                        span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-emerald-600 dark:text-emerald-400",
                             {t!("manage-skills-saved")}
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-#[component]
-fn PersonalityReadout(personality: Personality) -> Element {
-    let row = |label: String, v: f32| {
-        let pct = (v * 100.0).round() as i32;
-        rsx! {
-            div { class: "flex flex-col gap-1",
-                div { class: "flex items-center justify-between",
-                    span { class: "text-xs font-medium text-zinc-600 dark:text-zinc-300", "{label}" }
-                    span { class: "text-[11px] text-zinc-500 tabular-nums", "{pct}" }
-                }
-                div { class: "h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden",
-                    div { class: "h-full bg-violet-500", style: "width: {pct}%;" }
-                }
-            }
-        }
-    };
-    rsx! {
-        div { class: "flex flex-col gap-2 mt-2",
-            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-personality")} }
-            {row(t!("trait-openness"), personality.openness)}
-            {row(t!("trait-conscientiousness"), personality.conscientiousness)}
-            {row(t!("trait-extraversion"), personality.extraversion)}
-            {row(t!("trait-agreeableness"), personality.agreeableness)}
-            {row(t!("trait-emotional-stability"), personality.emotional_stability)}
         }
     }
 }

@@ -5,54 +5,146 @@ use dioxus_i18n::t;
 #[component]
 pub fn AgentList() -> Element {
     let agents_resource = use_context::<Resource<Vec<Agent>>>();
+    let agents_opt = agents_resource.read();
+    let count = agents_opt.as_ref().map(|a| a.len()).unwrap_or(0);
 
     rsx! {
-        div { class: "flex-1 overflow-y-auto p-8",
-            // Page header
-            div { class: "mb-8",
-                h2 { class: "text-3xl font-bold text-zinc-900 dark:text-zinc-100", {t!("dashboard-title")} }
-                p { class: "text-sm text-zinc-500 mt-1", {t!("dashboard-subtitle")} }
-            }
+        div { class: "flex-1 overflow-y-auto",
+            div { class: "max-w-7xl mx-auto px-10 py-12",
 
-            // Agent grid
-            div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4",
-                if let Some(agents) = agents_resource.read().as_ref() {
-                    for agent in agents.iter() {
-                        div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col items-center text-center gap-3 hover:border-violet-300 dark:hover:border-violet-500/50 hover:-translate-y-0.5 transition-all shadow-sm",
+                // ── Editorial header ──────────────────────────────────────────
+                header { class: "mb-12 reveal",
+                    div { class: "flex items-baseline gap-3 mb-2",
+                        span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400",
+                            "Volume 01"
+                        }
+                        span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+                        span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600",
+                            "{count:02} agents"
+                        }
+                    }
+                    h1 { class: "font-display text-6xl font-medium text-zinc-900 dark:text-zinc-100 leading-[0.95]",
+                        {t!("dashboard-title")}
+                    }
+                    p { class: "mt-3 font-display italic text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl",
+                        {t!("dashboard-subtitle")}
+                    }
+                }
 
-                            div { class: "w-14 h-14 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-2xl border border-zinc-200 dark:border-zinc-700",
-                                span { "🤖" }
-                            }
-
-                            h4 { class: "text-sm font-semibold text-zinc-900 dark:text-zinc-100 w-full truncate",
-                                "{agent.name}"
-                            }
-                            p { class: "text-xs text-zinc-500 line-clamp-2 flex-1",
-                                {t!("agent-specialty", specialty: agent.specialty.clone())}
-                            }
-
-                            div { class: "flex gap-1.5 w-full pt-3 border-t border-zinc-100 dark:border-zinc-800 mt-auto",
-                                Link {
-                                    to: Route::Chat { id: agent.id.clone() },
-                                    class: "flex-1 py-1.5 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 text-center transition-all no-underline",
-                                    {t!("chat-btn")}
-                                }
-                                Link {
-                                    to: Route::ManageAgent { id: agent.id.clone() },
-                                    class: "flex-1 py-1.5 text-xs font-semibold rounded-lg bg-sky-50 dark:bg-sky-400/10 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-400/30 hover:bg-sky-100 dark:hover:bg-sky-400/20 text-center transition-all no-underline",
-                                    {t!("manage-btn")}
-                                }
-                                Link {
-                                    to: Route::DeployAgent { id: agent.id.clone() },
-                                    class: "flex-1 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-400/30 hover:bg-emerald-100 dark:hover:bg-emerald-400/20 text-center transition-all no-underline",
-                                    {t!("deploy-btn")}
-                                }
+                // ── Grid ──────────────────────────────────────────────────────
+                if let Some(agents) = agents_opt.as_ref() {
+                    if agents.is_empty() {
+                        EmptyAgents {}
+                    } else {
+                        div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5",
+                            for (i, agent) in agents.iter().enumerate() {
+                                AgentCard { index: i + 1, agent: agent.clone() }
                             }
                         }
                     }
                 } else {
-                    p { class: "text-sm text-zinc-500", {t!("loading-agents")} }
+                    LoadingAgents {}
                 }
+            }
+        }
+    }
+}
+
+#[component]
+fn AgentCard(index: usize, agent: Agent) -> Element {
+    let initial = agent.name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_else(|| "·".into());
+    let idx = format!("Nº {:03}", index);
+    rsx! {
+        article { class: "group relative bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-1 transition-all reveal",
+
+            // top metadata row
+            div { class: "flex items-center justify-between",
+                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600",
+                    "{idx}"
+                }
+                span { class: "font-mono text-[9px] tracking-[0.22em] uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5",
+                    span { class: "inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-violet" }
+                    "online"
+                }
+            }
+
+            // avatar + name
+            div { class: "flex items-start gap-4",
+                div { class: "monogram-ring w-14 h-14 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display italic text-2xl text-zinc-900 dark:text-zinc-100 shrink-0",
+                    "{initial}"
+                }
+                div { class: "flex-1 min-w-0",
+                    h3 { class: "font-display text-2xl text-zinc-900 dark:text-zinc-100 leading-tight truncate",
+                        "{agent.name}"
+                    }
+                    p { class: "font-mono text-[10px] tracking-[0.18em] uppercase text-zinc-500 mt-1",
+                        "agent · OCEAN-tuned"
+                    }
+                }
+            }
+
+            // specialty
+            p { class: "text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-3 italic font-display",
+                "{agent.specialty}"
+            }
+
+            div { class: "rule-hairline" }
+
+            // actions
+            div { class: "flex gap-1.5",
+                Link {
+                    to: Route::Chat { id: agent.id.clone() },
+                    class: "flex-1 py-2 text-[11px] font-mono tracking-[0.18em] uppercase rounded-lg bg-violet-600 text-white hover:bg-violet-500 text-center transition-colors no-underline",
+                    {t!("chat-btn")}
+                }
+                Link {
+                    to: Route::ManageAgent { id: agent.id.clone() },
+                    class: "flex-1 py-2 text-[11px] font-mono tracking-[0.18em] uppercase rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 text-center transition-colors no-underline",
+                    {t!("manage-btn")}
+                }
+                Link {
+                    to: Route::DeployAgent { id: agent.id.clone() },
+                    class: "flex-1 py-2 text-[11px] font-mono tracking-[0.18em] uppercase rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 text-center transition-colors no-underline",
+                    {t!("deploy-btn")}
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn LoadingAgents() -> Element {
+    rsx! {
+        div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5",
+            for i in 0..3 {
+                div { key: "{i}",
+                    class: "h-56 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/30 flex items-center justify-center",
+                    p { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600",
+                        {t!("loading-agents")}
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn EmptyAgents() -> Element {
+    rsx! {
+        div { class: "rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/40 px-10 py-16 flex flex-col items-center text-center max-w-xl mx-auto reveal",
+            span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400 mb-3",
+                "Nº 000 — empty"
+            }
+            h3 { class: "font-display italic text-3xl text-zinc-900 dark:text-zinc-100 mb-3",
+                "Nothing here yet."
+            }
+            p { class: "text-sm text-zinc-500 mb-6 max-w-sm",
+                "Author your first agent — name it, give it a voice and a personality, then send it into the world."
+            }
+            Link {
+                to: Route::CreateAgent {},
+                class: "px-5 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity no-underline",
+                "+ Create the first one"
             }
         }
     }
