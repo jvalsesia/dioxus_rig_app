@@ -83,6 +83,13 @@ manage-edit-saving = Salvando...
 manage-edit-save = Salvar
 manage-edit-cancel = Cancelar
 
+manage-skills-title = Habilidades
+manage-skills-subtitle = Selecione quais habilidades este agente pode usar.
+manage-skills-empty = Nenhuma habilidade disponível. Crie algumas na página Habilidades.
+manage-skills-save = Salvar Habilidades
+manage-skills-saving = Salvando...
+manage-skills-saved = ✓ Salvo
+
 manage-start-chat = 💬 Iniciar Conversa
 manage-edit-btn = ✏️ Editar
 manage-delete-btn = 🗑️ Excluir

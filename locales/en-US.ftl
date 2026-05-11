@@ -83,6 +83,13 @@ manage-edit-saving = Saving...
 manage-edit-save = Save
 manage-edit-cancel = Cancel
 
+manage-skills-title = Skills
+manage-skills-subtitle = Select which skills this agent can use.
+manage-skills-empty = No skills available. Create some on the Skills page.
+manage-skills-save = Save Skills
+manage-skills-saving = Saving...
+manage-skills-saved = ✓ Saved
+
 manage-start-chat = 💬 Start Chat
 manage-edit-btn = ✏️ Edit
 manage-delete-btn = 🗑️ Delete

@@ -346,6 +346,98 @@ pub async fn add_skill(name: String, description: String, category: String) -> R
 pub async fn delete_skill(id: String) -> Result<(), ServerFnError> {
     let table = get_or_create_skills_table("en-US").await?;
     table.delete(&format!("id = '{}'", id)).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    // Cascade: remove any associations referencing this skill
+    if let Ok(join) = get_or_create_agent_skills_table().await {
+        let _ = join.delete(&format!("skill_id = '{}'", id)).await;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "server")]
+async fn get_or_create_agent_skills_table() -> Result<lancedb::Table, ServerFnError> {
+    use lancedb::connect;
+    use arrow_schema::{Schema, Field, DataType};
+    use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
+    use std::sync::Arc;
+
+    let db = connect("data/lancedb").execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let table_names = db.table_names().execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    if table_names.contains(&"agent_skills".to_string()) {
+        return db.open_table("agent_skills").execute().await.map_err(|e| ServerFnError::new(e.to_string()));
+    }
+
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("agent_id", DataType::Utf8, false),
+        Field::new("skill_id", DataType::Utf8, false),
+    ]));
+
+    // LanceDB requires at least one row to create a table; seed with a sentinel and immediately delete it.
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(StringArray::from(vec!["__seed__".to_string()])) as _,
+            Arc::new(StringArray::from(vec!["__seed__".to_string()])) as _,
+        ],
+    ).map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let reader = Box::new(RecordBatchIterator::new(vec![Ok(batch)], schema.clone())) as Box<dyn arrow_array::RecordBatchReader + Send>;
+    let table = db.create_table("agent_skills", reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    table.delete("agent_id = '__seed__'").await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    Ok(table)
+}
+
+#[server]
+pub async fn get_agent_skill_ids(agent_id: String) -> Result<Vec<String>, ServerFnError> {
+    use lancedb::query::{ExecutableQuery, QueryBase};
+    use futures::StreamExt;
+    use arrow_array::{StringArray, Array};
+
+    let table = get_or_create_agent_skills_table().await?;
+    let mut stream = table
+        .query()
+        .only_if(format!("agent_id = '{}'", agent_id))
+        .execute()
+        .await
+        .map_err(|e: lancedb::Error| ServerFnError::new(e.to_string()))?;
+
+    let mut ids = Vec::new();
+    while let Some(batch_result) = stream.next().await {
+        let batch = batch_result.map_err(|e| ServerFnError::new(e.to_string()))?;
+        let skill_ids = batch.column(1).as_any().downcast_ref::<StringArray>().unwrap();
+        for i in 0..batch.num_rows() {
+            ids.push(skill_ids.value(i).to_string());
+        }
+    }
+    Ok(ids)
+}
+
+#[server]
+pub async fn set_agent_skills(agent_id: String, skill_ids: Vec<String>) -> Result<(), ServerFnError> {
+    use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
+    use std::sync::Arc;
+
+    let table = get_or_create_agent_skills_table().await?;
+    table.delete(&format!("agent_id = '{}'", agent_id)).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    if skill_ids.is_empty() {
+        return Ok(());
+    }
+
+    let schema = table.schema().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    let agent_col: Vec<String> = std::iter::repeat(agent_id).take(skill_ids.len()).collect();
+
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(StringArray::from(agent_col)) as _,
+            Arc::new(StringArray::from(skill_ids)) as _,
+        ],
+    ).map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let reader = Box::new(RecordBatchIterator::new(vec![Ok(batch)], schema.clone())) as Box<dyn arrow_array::RecordBatchReader + Send>;
+    table.add(reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
     Ok(())
 }
 
