@@ -115,6 +115,12 @@ manage-skills-saved = ✓ Salvo
 manage-start-chat = 💬 Iniciar Conversa
 manage-edit-btn = ✏️ Editar
 manage-delete-btn = 🗑️ Excluir
+manage-delete-confirm-title = Excluir agente?
+manage-delete-confirm-body = Isto removerá permanentemente { $name } e todas as suas habilidades atribuídas. Esta ação não pode ser desfeita.
+manage-delete-confirm-cancel = Cancelar
+manage-delete-confirm-action = Excluir agente
+manage-delete-deleting = Excluindo...
+manage-delete-warning = Atenção
 
 deploy-btn = 🚀 Implantar
 deploy-back = ← Voltar ao Painel

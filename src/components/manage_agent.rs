@@ -23,22 +23,33 @@ pub fn ManageAgent(id: String) -> Element {
     }
 
     let agent = agent_opt.unwrap();
-    let initial = agent.name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_else(|| "·".into());
+    let initial = agent
+        .name
+        .chars()
+        .next()
+        .map(|c| c.to_uppercase().to_string())
+        .unwrap_or_else(|| "·".into());
 
     let mut edit_mode = use_signal(|| false);
     let mut edit_name = use_signal(|| agent.name.clone());
-    let mut edit_specialty = use_signal(|| agent.specialty.clone());
-    let mut edit_personality = use_signal(|| agent.personality);
+    let edit_specialty = use_signal(|| agent.specialty.clone());
+    let edit_personality = use_signal(|| agent.personality);
     let mut is_saving = use_signal(|| false);
+    let mut show_delete_confirm = use_signal(|| false);
+    let mut is_deleting = use_signal(|| false);
 
-    let delete_agent = {
+    let confirm_delete = {
         let id = id.clone();
         move |_| {
             let id = id.clone();
+            *is_deleting.write() = true;
             spawn(async move {
                 if crate::server_fns::delete_agent(id).await.is_ok() {
                     agents_resource.restart();
                     navigator.push(Route::AgentList {});
+                } else {
+                    *is_deleting.write() = false;
+                    *show_delete_confirm.write() = false;
                 }
             });
         }
@@ -58,7 +69,10 @@ pub fn ManageAgent(id: String) -> Element {
 
             *is_saving.write() = true;
             spawn(async move {
-                if crate::server_fns::update_agent(id, name, specialty, send_opt, recv_opt, p).await.is_ok() {
+                if crate::server_fns::update_agent(id, name, specialty, send_opt, recv_opt, p)
+                    .await
+                    .is_ok()
+                {
                     agents_resource.restart();
                     *edit_mode.write() = false;
                 }
@@ -135,7 +149,7 @@ pub fn ManageAgent(id: String) -> Element {
                         }
                         button {
                             class: "px-6 py-2.5 rounded-lg bg-transparent border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors",
-                            onclick: delete_agent,
+                            onclick: move |_| *show_delete_confirm.write() = true,
                             {t!("manage-delete-btn")}
                         }
                     }
@@ -152,6 +166,83 @@ pub fn ManageAgent(id: String) -> Element {
                 }
 
                 AgentSkills { agent_id: id.clone() }
+            }
+
+            if *show_delete_confirm.read() {
+                DeleteConfirmModal {
+                    agent_name: agent.name.clone(),
+                    is_deleting: *is_deleting.read(),
+                    on_cancel: move |_| if !*is_deleting.read() { *show_delete_confirm.write() = false },
+                    on_confirm: confirm_delete,
+                }
+            }
+        }
+    }
+}
+
+#[derive(Props, Clone, PartialEq)]
+struct DeleteConfirmModalProps {
+    agent_name: String,
+    is_deleting: bool,
+    on_cancel: EventHandler<MouseEvent>,
+    on_confirm: EventHandler<MouseEvent>,
+}
+
+#[component]
+fn DeleteConfirmModal(props: DeleteConfirmModalProps) -> Element {
+    let initial = props
+        .agent_name
+        .chars()
+        .next()
+        .map(|c| c.to_uppercase().to_string())
+        .unwrap_or_else(|| "·".into());
+
+    rsx! {
+        div {
+            class: "fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4",
+            onclick: move |evt| props.on_cancel.call(evt),
+            div {
+                class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden",
+                onclick: move |evt| evt.stop_propagation(),
+
+                // ── Header strip ────────────────────────────────────────
+                div { class: "flex items-center gap-3 px-5 pt-6 pb-4",
+                    span { class: "font-mono text-[10px] tracking-wider uppercase text-red-600 dark:text-red-400", {t!("manage-delete-warning")} }
+                    span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
+                }
+
+                // ── Body ────────────────────────────────────────────────
+                div { class: "px-5 pb-6 flex flex-col gap-4",
+                    div { class: "flex items-start gap-4",
+                        div { class: "shrink-0 w-11 h-11 rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 flex items-center justify-center font-display font-semibold text-xl text-red-600 dark:text-red-400",
+                            "{initial}"
+                        }
+                        div { class: "flex-1 min-w-0",
+                            h2 { class: "font-display font-semibold text-lg text-zinc-900 dark:text-zinc-100 leading-tight tracking-tight",
+                                {t!("manage-delete-confirm-title")}
+                            }
+                            p { class: "text-sm text-zinc-500 dark:text-zinc-400 mt-2 leading-relaxed",
+                                {t!("manage-delete-confirm-body", name: props.agent_name.clone())}
+                            }
+                        }
+                    }
+                }
+
+                // ── Footer actions ──────────────────────────────────────
+                div { class: "flex items-center justify-end gap-2 px-5 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/40",
+                    button {
+                        class: "px-5 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-medium hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors disabled:opacity-50",
+                        disabled: props.is_deleting,
+                        onclick: move |evt| props.on_cancel.call(evt),
+                        {t!("manage-delete-confirm-cancel")}
+                    }
+                    button {
+                        class: "px-5 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
+                        disabled: props.is_deleting,
+                        onclick: move |evt| props.on_confirm.call(evt),
+                        if props.is_deleting { {t!("manage-delete-deleting")} } else { {t!("manage-delete-confirm-action")} }
+                    }
+                }
             }
         }
     }
@@ -202,11 +293,19 @@ fn EditPanel(props: EditPanelProps) -> Element {
 #[component]
 fn PersonalityEqualizer(personality: Personality) -> Element {
     let bars = [
-        ("O", t!("trait-openness"),            personality.openness),
-        ("C", t!("trait-conscientiousness"),   personality.conscientiousness),
-        ("E", t!("trait-extraversion"),        personality.extraversion),
-        ("A", t!("trait-agreeableness"),       personality.agreeableness),
-        ("N", t!("trait-emotional-stability"), personality.emotional_stability),
+        ("O", t!("trait-openness"), personality.openness),
+        (
+            "C",
+            t!("trait-conscientiousness"),
+            personality.conscientiousness,
+        ),
+        ("E", t!("trait-extraversion"), personality.extraversion),
+        ("A", t!("trait-agreeableness"), personality.agreeableness),
+        (
+            "N",
+            t!("trait-emotional-stability"),
+            personality.emotional_stability,
+        ),
     ];
     rsx! {
         section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 mb-6 reveal",
@@ -263,7 +362,9 @@ fn AgentSkills(agent_id: String) -> Element {
     use_future(move || {
         let aid = aid_for_load.clone();
         async move {
-            let ids = crate::server_fns::get_agent_skill_ids(aid).await.unwrap_or_default();
+            let ids = crate::server_fns::get_agent_skill_ids(aid)
+                .await
+                .unwrap_or_default();
             selected.set(Some(ids.into_iter().collect()));
         }
     });
@@ -285,7 +386,9 @@ fn AgentSkills(agent_id: String) -> Element {
             spawn(async move {
                 let ok = crate::server_fns::set_agent_skills(aid, ids).await.is_ok();
                 is_saving.set(false);
-                if ok { just_saved.set(true); }
+                if ok {
+                    just_saved.set(true);
+                }
             });
         }
     };

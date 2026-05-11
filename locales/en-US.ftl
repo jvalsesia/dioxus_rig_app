@@ -115,6 +115,12 @@ manage-skills-saved = ✓ Saved
 manage-start-chat = 💬 Start Chat
 manage-edit-btn = ✏️ Edit
 manage-delete-btn = 🗑️ Delete
+manage-delete-confirm-title = Delete agent?
+manage-delete-confirm-body = This will permanently remove { $name } and all of its skills assignments. This action cannot be undone.
+manage-delete-confirm-cancel = Cancel
+manage-delete-confirm-action = Delete agent
+manage-delete-deleting = Deleting...
+manage-delete-warning = Warning
 
 deploy-btn = 🚀 Deploy
 deploy-back = ← Back to Dashboard

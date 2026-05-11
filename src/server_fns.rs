@@ -457,7 +457,7 @@ pub async fn set_agent_skills(agent_id: String, skill_ids: Vec<String>) -> Resul
     }
 
     let schema = table.schema().await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    let agent_col: Vec<String> = std::iter::repeat(agent_id).take(skill_ids.len()).collect();
+    let agent_col: Vec<String> = std::iter::repeat_n(agent_id, skill_ids.len()).collect();
 
     let batch = RecordBatch::try_new(
         schema.clone(),
