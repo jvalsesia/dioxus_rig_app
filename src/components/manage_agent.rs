@@ -17,7 +17,7 @@ pub fn ManageAgent(id: String) -> Element {
     if agent_opt.is_none() {
         return rsx! {
             div { class: "flex-1 overflow-y-auto px-10 py-12",
-                p { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-500", {t!("loading-agents")} }
+                p { class: "text-sm text-zinc-500", {t!("loading-agents")} }
             }
         };
     }
@@ -67,46 +67,41 @@ pub fn ManageAgent(id: String) -> Element {
         }
     };
 
-    let input_cls = "w-full bg-transparent border-0 border-b border-zinc-300 dark:border-zinc-700 px-0 py-2.5 text-zinc-900 dark:text-zinc-100 text-lg placeholder:text-zinc-400 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 transition-colors font-display";
+    let input_cls = "w-full bg-transparent border-0 border-b border-zinc-300 dark:border-zinc-700 px-0 py-2.5 text-zinc-900 dark:text-zinc-100 text-lg placeholder:text-zinc-400 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 transition-colors font-display tracking-tight";
     let textarea_cls = "w-full bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 resize-none transition-colors";
 
     rsx! {
         div { class: "flex-1 overflow-y-auto",
             div { class: "max-w-4xl mx-auto px-10 py-12",
 
-                // ── Top breadcrumb ────────────────────────────────────────────
-                div { class: "mb-8 flex items-baseline gap-3",
+                // ── Breadcrumb ────────────────────────────────────────────────
+                div { class: "mb-8",
                     Link {
                         to: Route::AgentList {},
-                        class: "font-mono text-[11px] tracking-[0.22em] uppercase text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
+                        class: "text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
                         {t!("manage-back")}
-                    }
-                    span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
-                    span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400",
-                        "Manage"
                     }
                 }
 
-                // ── Editorial hero ────────────────────────────────────────────
+                // ── Hero ─────────────────────────────────────────────────────
                 div { class: "flex items-start gap-6 mb-10 reveal",
-                    div { class: "monogram-ring w-24 h-24 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display italic text-5xl text-zinc-900 dark:text-zinc-100 shrink-0",
+                    div { class: "monogram-ring w-24 h-24 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display font-semibold text-5xl text-zinc-900 dark:text-zinc-100 shrink-0",
                         "{initial}"
                     }
                     div { class: "flex-1 min-w-0",
-                        span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-500", "agent file" }
                         if *edit_mode.read() {
                             input {
-                                class: "{input_cls} text-5xl mt-1",
+                                class: "{input_cls} text-5xl",
                                 value: "{edit_name}",
                                 oninput: move |evt| *edit_name.write() = evt.value(),
                             }
                         } else {
-                            h1 { class: "font-display text-5xl text-zinc-900 dark:text-zinc-100 leading-none mt-1",
+                            h1 { class: "font-display font-semibold text-5xl text-zinc-900 dark:text-zinc-100 leading-none tracking-tight",
                                 "{agent.name}"
                             }
                         }
                         if !*edit_mode.read() {
-                            p { class: "font-display italic text-lg text-zinc-500 dark:text-zinc-400 mt-3 leading-relaxed",
+                            p { class: "text-lg text-zinc-500 dark:text-zinc-400 mt-3 leading-relaxed",
                                 "{agent.specialty}"
                             }
                         }
@@ -117,29 +112,29 @@ pub fn ManageAgent(id: String) -> Element {
                 div { class: "flex flex-wrap gap-2 mb-10",
                     if *edit_mode.read() {
                         button {
-                            class: "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50",
+                            class: "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50",
                             onclick: save_agent,
                             disabled: *is_saving.read(),
                             if *is_saving.read() { {t!("manage-edit-saving")} } else { {t!("manage-edit-save")} }
                         }
                         button {
-                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] tracking-[0.22em] uppercase hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors",
+                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-medium hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors",
                             onclick: move |_| *edit_mode.write() = false,
                             {t!("manage-edit-cancel")}
                         }
                     } else {
                         Link {
                             to: Route::Chat { id: id.clone() },
-                            class: "px-6 py-2.5 rounded-lg bg-violet-600 text-white font-mono text-[11px] tracking-[0.22em] uppercase hover:bg-violet-500 transition-colors no-underline",
+                            class: "px-6 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-500 transition-colors no-underline",
                             {t!("manage-start-chat")}
                         }
                         button {
-                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] tracking-[0.22em] uppercase hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors",
+                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-medium hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors",
                             onclick: move |_| *edit_mode.write() = true,
                             {t!("manage-edit-btn")}
                         }
                         button {
-                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 font-mono text-[11px] tracking-[0.22em] uppercase hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors",
+                            class: "px-6 py-2.5 rounded-lg bg-transparent border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors",
                             onclick: delete_agent,
                             {t!("manage-delete-btn")}
                         }
@@ -176,9 +171,8 @@ fn EditPanel(props: EditPanelProps) -> Element {
     let textarea_cls = props.textarea_cls;
     rsx! {
         section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 mb-6",
-            div { class: "flex items-baseline gap-3 mb-5",
-                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "01" }
-                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "Specialty" }
+            div { class: "flex items-center gap-3 mb-5",
+                span { class: "font-mono text-[10px] tracking-wider uppercase text-amber-600 dark:text-amber-400", "Specialty" }
                 span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
             }
             textarea {
@@ -189,9 +183,8 @@ fn EditPanel(props: EditPanelProps) -> Element {
             }
         }
         section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 mb-6",
-            div { class: "flex items-baseline gap-3 mb-5",
-                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "02" }
-                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "Personality" }
+            div { class: "flex items-center gap-3 mb-5",
+                span { class: "font-mono text-[10px] tracking-wider uppercase text-amber-600 dark:text-amber-400", "Personality" }
                 span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
             }
             div { class: "flex flex-col gap-5",
@@ -205,7 +198,7 @@ fn EditPanel(props: EditPanelProps) -> Element {
     }
 }
 
-/// Read-only Five-Factor display rendered as a vertical 5-column equalizer.
+/// Read-only Five-Factor display rendered as a 5-column equalizer.
 #[component]
 fn PersonalityEqualizer(personality: Personality) -> Element {
     let bars = [
@@ -217,11 +210,9 @@ fn PersonalityEqualizer(personality: Personality) -> Element {
     ];
     rsx! {
         section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 mb-6 reveal",
-            div { class: "flex items-baseline gap-3 mb-6",
-                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "01" }
-                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "Five-Factor signature" }
+            div { class: "flex items-center gap-3 mb-6",
+                span { class: "font-mono text-[10px] tracking-wider uppercase text-amber-600 dark:text-amber-400", "Five-Factor signature" }
                 span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
-                span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", "O · C · E · A · N" }
             }
             div { class: "grid grid-cols-5 gap-3",
                 for (initial, label, value) in bars.iter() {
@@ -230,7 +221,6 @@ fn PersonalityEqualizer(personality: Personality) -> Element {
                         let height_style = format!("height: {}%;", pct.max(4));
                         rsx! {
                             div { key: "{initial}", class: "flex flex-col items-center gap-2",
-                                // Bar
                                 div { class: "relative w-full h-40 rounded-lg bg-zinc-100/60 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 overflow-hidden flex items-end",
                                     div {
                                         style: "{height_style}",
@@ -239,11 +229,11 @@ fn PersonalityEqualizer(personality: Personality) -> Element {
                                     span { class: "absolute top-2 left-2 font-mono text-[10px] text-zinc-500 tabular-nums",
                                         "{pct}"
                                     }
-                                    span { class: "absolute top-2 right-2 font-mono text-[10px] text-amber-600 dark:text-amber-400",
+                                    span { class: "absolute top-2 right-2 font-mono text-[10px] font-semibold text-amber-600 dark:text-amber-400",
                                         "{initial}"
                                     }
                                 }
-                                span { class: "font-display italic text-xs text-center text-zinc-600 dark:text-zinc-300 leading-tight",
+                                span { class: "text-xs text-center text-zinc-600 dark:text-zinc-300 leading-tight font-medium",
                                     "{label}"
                                 }
                             }
@@ -302,18 +292,17 @@ fn AgentSkills(agent_id: String) -> Element {
 
     rsx! {
         section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 reveal",
-            div { class: "flex items-baseline gap-3 mb-5",
-                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "02" }
-                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "Skills" }
+            div { class: "flex items-center gap-3 mb-5",
+                span { class: "font-mono text-[10px] tracking-wider uppercase text-amber-600 dark:text-amber-400", "Skills" }
                 span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
             }
-            h2 { class: "font-display text-2xl text-zinc-900 dark:text-zinc-100 mb-1", {t!("manage-skills-title")} }
-            p { class: "font-display italic text-sm text-zinc-500 mb-5", {t!("manage-skills-subtitle")} }
+            h2 { class: "font-display font-semibold text-2xl text-zinc-900 dark:text-zinc-100 mb-1 tracking-tight", {t!("manage-skills-title")} }
+            p { class: "text-sm text-zinc-500 mb-5", {t!("manage-skills-subtitle")} }
 
             if !is_ready {
-                p { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-500", {t!("manage-skills-saving")} }
+                p { class: "text-sm text-zinc-500", {t!("manage-skills-saving")} }
             } else if all_skills.is_empty() {
-                p { class: "font-display italic text-sm text-zinc-500", {t!("manage-skills-empty")} }
+                p { class: "text-sm text-zinc-500", {t!("manage-skills-empty")} }
             } else {
                 ul { class: "flex flex-col gap-2 mb-5",
                     for skill in all_skills.iter() {
@@ -346,7 +335,7 @@ fn AgentSkills(agent_id: String) -> Element {
                                         if checked { "✓" } else { "" }
                                     }
                                     div { class: "flex-1 min-w-0",
-                                        p { class: "text-sm font-medium text-zinc-900 dark:text-zinc-100 font-display", "{skill.name}" }
+                                        p { class: "text-sm font-medium text-zinc-900 dark:text-zinc-100", "{skill.name}" }
                                         p { class: "text-xs text-zinc-500 mt-0.5", "{skill.description}" }
                                     }
                                 }
@@ -357,13 +346,13 @@ fn AgentSkills(agent_id: String) -> Element {
 
                 div { class: "flex items-center gap-3",
                     button {
-                        class: "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50",
+                        class: "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50",
                         onclick: save,
                         disabled: *is_saving.read(),
                         if *is_saving.read() { {t!("manage-skills-saving")} } else { {t!("manage-skills-save")} }
                     }
                     if *just_saved.read() {
-                        span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-emerald-600 dark:text-emerald-400",
+                        span { class: "text-xs font-medium text-emerald-600 dark:text-emerald-400",
                             {t!("manage-skills-saved")}
                         }
                     }

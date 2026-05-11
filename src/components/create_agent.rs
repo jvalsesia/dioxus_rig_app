@@ -22,7 +22,7 @@ pub fn CreateAgent() -> Element {
     let mut is_loading = use_signal(|| false);
     let mut personality = use_signal(Personality::default);
 
-    let input_cls = "w-full bg-transparent border-0 border-b border-zinc-300 dark:border-zinc-700 px-0 py-3 text-zinc-900 dark:text-zinc-100 text-lg placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 transition-colors font-display";
+    let input_cls = "w-full bg-transparent border-0 border-b border-zinc-300 dark:border-zinc-700 px-0 py-3 text-zinc-900 dark:text-zinc-100 text-lg placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 transition-colors font-display tracking-tight";
 
     let textarea_cls = "w-full bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 resize-none transition-colors";
 
@@ -58,34 +58,29 @@ pub fn CreateAgent() -> Element {
             div { class: "max-w-5xl mx-auto px-10 py-12",
 
                 // ── Page head ─────────────────────────────────────────────────
-                header { class: "mb-12 reveal",
-                    div { class: "flex items-baseline gap-3 mb-2",
-                        span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400",
-                            "New entry · 01 / 03"
+                header { class: "mb-12 reveal flex items-end justify-between gap-6 flex-wrap",
+                    div {
+                        h1 { class: "font-display font-semibold text-5xl text-zinc-900 dark:text-zinc-100 leading-[0.95] tracking-tight",
+                            {t!("create-page-title")}
                         }
-                        span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
-                        Link {
-                            to: Route::AgentList {},
-                            class: "font-mono text-[11px] tracking-[0.22em] uppercase text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
-                            "← back"
+                        p { class: "mt-3 text-base text-zinc-500 dark:text-zinc-400 max-w-2xl",
+                            {t!("create-page-subtitle")}
                         }
                     }
-                    h1 { class: "font-display text-5xl text-zinc-900 dark:text-zinc-100 leading-[0.95]",
-                        {t!("create-page-title")}
-                    }
-                    p { class: "mt-3 font-display italic text-base text-zinc-500 dark:text-zinc-400 max-w-2xl",
-                        {t!("create-page-subtitle")}
+                    Link {
+                        to: Route::AgentList {},
+                        class: "text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
+                        "← back to dashboard"
                     }
                 }
 
-                // ── 01 · Identity ─────────────────────────────────────────────
+                // ── Identity ──────────────────────────────────────────────────
                 Section {
-                    index: "01",
                     eyebrow: "Identity",
                     title: t!("create-modal-title"),
                     div { class: "flex flex-col gap-6",
                         div { class: "flex flex-col gap-2",
-                            label { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", {t!("create-modal-name")} }
+                            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-name")} }
                             input {
                                 class: "{input_cls}",
                                 placeholder: t!("create-modal-name-placeholder"),
@@ -94,7 +89,7 @@ pub fn CreateAgent() -> Element {
                             }
                         }
                         div { class: "flex flex-col gap-2",
-                            label { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", {t!("create-modal-specialty")} }
+                            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-specialty")} }
                             textarea {
                                 class: "{textarea_cls}",
                                 placeholder: t!("create-modal-specialty-placeholder"),
@@ -106,14 +101,13 @@ pub fn CreateAgent() -> Element {
                     }
                 }
 
-                // ── 02 · Personality + 03 · Skills (two columns) ──────────────
+                // ── Personality + Skills (two columns) ────────────────────────
                 div { class: "grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6",
 
                     Section {
-                        index: "02",
                         eyebrow: "Personality",
                         title: t!("create-modal-personality"),
-                        p { class: "font-display italic text-sm text-zinc-500 dark:text-zinc-500 mb-4",
+                        p { class: "text-sm text-zinc-500 dark:text-zinc-500 mb-5 -mt-3",
                             {t!("create-modal-personality-hint")}
                         }
                         div { class: "flex flex-col gap-5",
@@ -126,11 +120,10 @@ pub fn CreateAgent() -> Element {
                     }
 
                     Section {
-                        index: "03",
                         eyebrow: "Skills",
                         title: t!("create-modal-skills"),
                         if skills.is_empty() {
-                            p { class: "font-display italic text-sm text-zinc-500", {t!("create-modal-skills-empty")} }
+                            p { class: "text-sm text-zinc-500", {t!("create-modal-skills-empty")} }
                         } else {
                             ul { class: "chat-scroll flex flex-col gap-2 max-h-[26rem] overflow-y-auto pr-2",
                                 for skill in skills.iter() {
@@ -142,9 +135,9 @@ pub fn CreateAgent() -> Element {
                                             li {
                                                 key: "{skill.id}",
                                                 class: if checked {
-                                                    "group flex items-start gap-3 p-3 rounded-xl border border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-900 transition-colors cursor-pointer"
+                                                    "flex items-start gap-3 p-3 rounded-xl border border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-900 transition-colors cursor-pointer"
                                                 } else {
-                                                    "group flex items-start gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors cursor-pointer"
+                                                    "flex items-start gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors cursor-pointer"
                                                 },
                                                 onclick: move |_| {
                                                     let sid = sid_click.clone();
@@ -159,7 +152,7 @@ pub fn CreateAgent() -> Element {
                                                     if checked { "✓" } else { "" }
                                                 }
                                                 div { class: "flex-1 min-w-0",
-                                                    p { class: "text-sm font-medium text-zinc-900 dark:text-zinc-100 font-display", "{skill.name}" }
+                                                    p { class: "text-sm font-medium text-zinc-900 dark:text-zinc-100", "{skill.name}" }
                                                     p { class: "text-xs text-zinc-500 mt-0.5", "{skill.description}" }
                                                 }
                                             }
@@ -172,22 +165,17 @@ pub fn CreateAgent() -> Element {
                 }
 
                 // ── Action bar ───────────────────────────────────────────────
-                div { class: "mt-10 flex items-center justify-between gap-4",
-                    span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600",
-                        "End of entry"
+                div { class: "mt-10 flex items-center justify-end gap-3",
+                    Link {
+                        to: Route::AgentList {},
+                        class: "px-6 py-3 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-medium hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors no-underline",
+                        {t!("manage-edit-cancel")}
                     }
-                    div { class: "flex gap-3",
-                        Link {
-                            to: Route::AgentList {},
-                            class: "px-6 py-3 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] tracking-[0.22em] uppercase hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors no-underline",
-                            {t!("manage-edit-cancel")}
-                        }
-                        button {
-                            class: "px-8 py-3 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50",
-                            onclick: create_agent,
-                            disabled: *is_loading.read(),
-                            if *is_loading.read() { {t!("create-modal-creating")} } else { {t!("create-modal-submit")} }
-                        }
+                    button {
+                        class: "px-8 py-3 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50",
+                        onclick: create_agent,
+                        disabled: *is_loading.read(),
+                        if *is_loading.read() { {t!("create-modal-creating")} } else { {t!("create-modal-submit")} }
                     }
                 }
             }
@@ -197,7 +185,6 @@ pub fn CreateAgent() -> Element {
 
 #[derive(Props, Clone, PartialEq)]
 struct SectionProps {
-    index: &'static str,
     eyebrow: &'static str,
     title: String,
     children: Element,
@@ -207,16 +194,13 @@ struct SectionProps {
 fn Section(props: SectionProps) -> Element {
     rsx! {
         section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 reveal",
-            div { class: "flex items-baseline gap-3 mb-5",
-                span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none",
-                    "{props.index}"
-                }
-                span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600",
+            div { class: "flex items-center gap-3 mb-5",
+                span { class: "font-mono text-[10px] tracking-wider uppercase text-amber-600 dark:text-amber-400",
                     "{props.eyebrow}"
                 }
                 span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
             }
-            h2 { class: "font-display text-2xl text-zinc-900 dark:text-zinc-100 mb-5",
+            h2 { class: "font-display font-semibold text-2xl text-zinc-900 dark:text-zinc-100 mb-5 tracking-tight",
                 "{props.title}"
             }
             {props.children}

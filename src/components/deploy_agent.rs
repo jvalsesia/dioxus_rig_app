@@ -14,7 +14,7 @@ pub fn DeployAgent(id: String) -> Element {
     if agent_opt.is_none() {
         return rsx! {
             div { class: "flex-1 overflow-y-auto px-10 py-12",
-                p { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-500", {t!("loading-agents")} }
+                p { class: "text-sm text-zinc-500", {t!("loading-agents")} }
             }
         };
     }
@@ -67,49 +67,43 @@ pub fn DeployAgent(id: String) -> Element {
     // ── Shared field styles
     let input_cls = "w-full bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors";
 
-    let label_cls = "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500";
+    let label_cls = "text-xs font-medium text-zinc-500 uppercase tracking-wider";
 
-    let action_btn_cls = "bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 px-4 py-2.5 rounded-lg font-mono text-[11px] tracking-[0.22em] uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
+    let action_btn_cls = "bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 
-    let primary_btn_cls = "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono text-[11px] tracking-[0.22em] uppercase hover:opacity-90 transition-opacity disabled:opacity-50";
+    let primary_btn_cls = "px-6 py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50";
 
-    let status_ok_cls  = "font-mono text-[10px] tracking-[0.22em] uppercase px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-400/30";
-    let status_err_cls = "font-mono text-[10px] tracking-[0.22em] uppercase px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30";
+    let status_ok_cls  = "text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-400/30";
+    let status_err_cls = "text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30";
 
     rsx! {
         div { class: "flex-1 overflow-y-auto",
             div { class: "max-w-3xl mx-auto px-10 py-12",
 
                 // ── Breadcrumb ────────────────────────────────────────────────
-                div { class: "mb-8 flex items-baseline gap-3",
+                div { class: "mb-8",
                     Link {
                         to: Route::AgentList {},
-                        class: "font-mono text-[11px] tracking-[0.22em] uppercase text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
+                        class: "text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 no-underline",
                         {t!("deploy-back")}
-                    }
-                    span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
-                    span { class: "font-mono text-[11px] tracking-[0.28em] uppercase text-amber-600 dark:text-amber-400",
-                        "Deploy"
                     }
                 }
 
                 // ── Hero ─────────────────────────────────────────────────────
                 div { class: "flex items-center gap-5 mb-10 reveal",
-                    div { class: "monogram-ring w-20 h-20 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display italic text-4xl text-zinc-900 dark:text-zinc-100 shrink-0",
+                    div { class: "monogram-ring w-20 h-20 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-display font-semibold text-4xl text-zinc-900 dark:text-zinc-100 shrink-0",
                         "{initial}"
                     }
                     div {
-                        span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500", "deploying" }
-                        h1 { class: "font-display text-4xl text-zinc-900 dark:text-zinc-100 leading-none mt-1", "{agent.name}" }
-                        p { class: "font-display italic text-sm text-zinc-500 mt-2", {t!("deploy-title")} }
+                        h1 { class: "font-display font-semibold text-4xl text-zinc-900 dark:text-zinc-100 leading-none tracking-tight", "{agent.name}" }
+                        p { class: "text-sm text-zinc-500 mt-2", {t!("deploy-title")} }
                     }
                 }
 
                 // ── n8n webhooks ─────────────────────────────────────────────
                 section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 flex flex-col gap-5 mb-6 reveal-1",
-                    div { class: "flex items-baseline gap-3",
-                        span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "01" }
-                        span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", "n8n webhooks" }
+                    div { class: "flex items-center gap-3",
+                        span { class: "font-mono text-[10px] tracking-wider uppercase text-amber-600 dark:text-amber-400", "n8n webhooks" }
                         span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
                     }
 
@@ -151,7 +145,7 @@ pub fn DeployAgent(id: String) -> Element {
                             if *is_testing.read() { {t!("deploy-testing")} } else { {t!("deploy-test-send")} }
                         }
                         if !test_result.read().is_empty() {
-                            p { class: "font-mono text-[10px] tracking-[0.18em] uppercase text-zinc-500", "{test_result}" }
+                            p { class: "text-xs text-zinc-500", "{test_result}" }
                         }
                     }
 
@@ -164,7 +158,7 @@ pub fn DeployAgent(id: String) -> Element {
                         }
                         Link {
                             to: Route::AgentList {},
-                            class: "flex items-center justify-center px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] tracking-[0.22em] uppercase hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors no-underline",
+                            class: "flex items-center justify-center px-6 py-2.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-medium hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors no-underline",
                             {t!("deploy-cancel")}
                         }
                     }
@@ -172,9 +166,8 @@ pub fn DeployAgent(id: String) -> Element {
 
                 // ── Evolution API ────────────────────────────────────────────
                 section { class: "bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-7 flex flex-col gap-5 reveal-2",
-                    div { class: "flex items-baseline gap-3",
-                        span { class: "font-mono text-2xl text-amber-600 dark:text-amber-400 leading-none", "02" }
-                        span { class: "font-mono text-[10px] tracking-[0.28em] uppercase text-zinc-400 dark:text-zinc-600", {t!("deploy-evo-title")} }
+                    div { class: "flex items-center gap-3",
+                        span { class: "font-mono text-[10px] tracking-wider uppercase text-amber-600 dark:text-amber-400", {t!("deploy-evo-title")} }
                         span { class: "h-px flex-1 bg-zinc-200 dark:bg-zinc-800" }
                     }
 
@@ -256,7 +249,7 @@ pub fn DeployAgent(id: String) -> Element {
                             if *is_verifying_evo.read() { {t!("deploy-evo-verifying")} } else { {t!("deploy-evo-verify")} }
                         }
                         if !evo_verify_time.read().is_empty() {
-                            span { class: "font-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-lg",
+                            span { class: "text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-lg",
                                 {t!("deploy-evo-last-verification", time: evo_verify_time.read().clone())}
                             }
                         }

@@ -1,10 +1,10 @@
 /* ──────────────────────────────────────────────────────────────────────────────
-   Agents Wizard — Editorial-Technical Design System
-   Display:  Fraunces (variable serif, italic-capable)
-   Mono:     JetBrains Mono (technical metadata, indices, tracking)
-   Body:     Manrope (UI text)
+   Agents Wizard — Modern Design System
+   Display:  Poppins
+   Body:     Inter
+   Labels:   Roboto
    ────────────────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
 
 @import "tailwindcss";
 
@@ -12,27 +12,24 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans:    'Manrope', system-ui, sans-serif;
-  --font-display: 'Fraunces', 'Times New Roman', serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  --font-sans:    'Inter', system-ui, sans-serif;
+  --font-display: 'Poppins', 'Inter', system-ui, sans-serif;
+  --font-mono:    'Roboto', system-ui, sans-serif;
 }
 
 @layer base {
   html {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: "ss01", "cv11";
   }
   body {
-    /* Paper-warm light surface; near-black ink for dark. */
     background-color: #fafaf9;
   }
   .dark body {
     background-color: #09090b;
   }
-  /* Tighten serif headings and enable contextual alternates */
   .font-display {
-    font-feature-settings: "ss01", "ss02";
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
   }
 }
 

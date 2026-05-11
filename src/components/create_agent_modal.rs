@@ -187,7 +187,7 @@ pub fn PersonalitySlider(props: PersonalitySliderProps) -> Element {
                 span { class: "shrink-0 w-7 h-7 rounded-md border border-amber-300/70 dark:border-amber-400/40 bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300 font-mono text-[11px] flex items-center justify-center",
                     "{initial}"
                 }
-                span { class: "flex-1 font-display italic text-sm text-zinc-800 dark:text-zinc-200 truncate",
+                span { class: "flex-1 text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate",
                     title: "{props.low} ↔ {props.high}",
                     "{props.label}"
                 }
@@ -210,7 +210,7 @@ pub fn PersonalitySlider(props: PersonalitySliderProps) -> Element {
                         }
                     },
                 }
-                div { class: "flex items-center justify-between font-mono text-[9px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-600",
+                div { class: "flex items-center justify-between font-mono text-[9px] tracking-wider uppercase text-zinc-400 dark:text-zinc-600",
                     span { "{props.low}" }
                     span { "{props.high}" }
                 }
