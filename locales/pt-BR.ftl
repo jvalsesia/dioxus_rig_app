@@ -74,6 +74,8 @@ create-modal-specialty = Especialidade (Prompt)
 create-modal-specialty-placeholder = ex: Você é um vendedor agressivo de carros...
 create-modal-creating = Criando...
 create-modal-submit = Criar Agente
+create-modal-skills = Habilidades
+create-modal-skills-empty = Nenhuma habilidade disponível ainda.
 
 manage-back = ← Voltar ao Painel
 manage-edit-title = Editar Agente

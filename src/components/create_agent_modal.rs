@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
-use dioxus_i18n::t;
-use crate::Agent;
+use dioxus_i18n::{t, prelude::*};
+use std::collections::HashSet;
+use crate::{Agent, Skill};
 
 #[derive(Props, Clone, PartialEq)]
 pub struct CreateAgentModalProps {
@@ -10,8 +11,19 @@ pub struct CreateAgentModalProps {
 #[component]
 pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
     let mut agents_resource = use_context::<Resource<Vec<Agent>>>();
+    let i18n = i18n();
+    let lang_str = i18n.language().to_string();
+
+    let skills_resource = use_resource(move || {
+        let l = lang_str.clone();
+        async move {
+            crate::server_fns::get_skills(l).await.unwrap_or_default()
+        }
+    });
+
     let mut new_name = use_signal(String::new);
     let mut new_specialty = use_signal(String::new);
+    let mut selected = use_signal(HashSet::<String>::new);
     let mut is_loading = use_signal(|| false);
 
     let input_cls = "w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500/50 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-500/20 transition-all";
@@ -22,24 +34,34 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
         if name.trim().is_empty() || specialty.trim().is_empty() {
             return;
         }
+        let skill_ids: Vec<String> = selected.read().iter().cloned().collect();
         *is_loading.write() = true;
         spawn(async move {
-            if crate::server_fns::add_agent(name, specialty).await.is_ok() {
-                agents_resource.restart();
-                *is_loading.write() = false;
-                props.onclose.call(());
-            } else {
-                *is_loading.write() = false;
+            match crate::server_fns::add_agent(name, specialty).await {
+                Ok(agent) => {
+                    if !skill_ids.is_empty() {
+                        let _ = crate::server_fns::set_agent_skills(agent.id, skill_ids).await;
+                    }
+                    agents_resource.restart();
+                    *is_loading.write() = false;
+                    props.onclose.call(());
+                }
+                Err(_) => {
+                    *is_loading.write() = false;
+                }
             }
         });
     };
 
+    let skills_opt = skills_resource.read_unchecked();
+    let skills: Vec<Skill> = skills_opt.clone().unwrap_or_default();
+
     rsx! {
         div { class: "fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50",
-            div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-5 shadow-2xl",
+            div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-5 shadow-2xl max-h-[90vh]",
 
                 // Header
-                div { class: "flex items-center justify-between",
+                div { class: "flex items-center justify-between shrink-0",
                     h3 { class: "text-lg font-semibold text-zinc-900 dark:text-zinc-100", {t!("create-modal-title")} }
                     button {
                         class: "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-xl cursor-pointer transition-colors bg-transparent border-none leading-none",
@@ -71,9 +93,52 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
                     }
                 }
 
+                // Skills picker
+                div { class: "flex flex-col gap-2 min-h-0",
+                    label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-skills")} }
+                    if skills.is_empty() {
+                        p { class: "text-xs text-zinc-500", {t!("create-modal-skills-empty")} }
+                    } else {
+                        ul { class: "chat-scroll flex flex-col gap-1.5 h-56 overflow-y-auto pr-2 rounded-lg border border-zinc-200 dark:border-zinc-800 p-2",
+                            for skill in skills.iter() {
+                                {
+                                    let sid = skill.id.clone();
+                                    let sid_click = sid.clone();
+                                    let checked = selected.read().contains(&sid);
+                                    rsx! {
+                                        li {
+                                            key: "{skill.id}",
+                                            class: "flex items-start gap-2 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-500/50 transition-all cursor-pointer",
+                                            onclick: move |_| {
+                                                let sid = sid_click.clone();
+                                                let mut s = selected.write();
+                                                if s.contains(&sid) {
+                                                    s.remove(&sid);
+                                                } else {
+                                                    s.insert(sid);
+                                                }
+                                            },
+                                            input {
+                                                r#type: "checkbox",
+                                                checked: checked,
+                                                class: "mt-0.5 accent-violet-600 pointer-events-none",
+                                                onchange: move |_| {},
+                                            }
+                                            div { class: "flex-1 min-w-0",
+                                                p { class: "text-xs font-semibold text-zinc-900 dark:text-zinc-100", "{skill.name}" }
+                                                p { class: "text-[11px] text-zinc-500 mt-0.5 line-clamp-2", "{skill.description}" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Submit
                 button {
-                    class: "w-full bg-violet-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                    class: "w-full bg-violet-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0",
                     onclick: create_agent,
                     disabled: *is_loading.read(),
                     if *is_loading.read() { {t!("create-modal-creating")} } else { {t!("create-modal-submit")} }
