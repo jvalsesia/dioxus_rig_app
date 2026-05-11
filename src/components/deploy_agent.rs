@@ -42,6 +42,7 @@ pub fn DeployAgent(id: String) -> Element {
         let id        = id.clone();
         let name      = agent.name.clone();
         let specialty = agent.specialty.clone();
+        let personality = agent.personality;
         move |_| {
             let id        = id.clone();
             let name      = name.clone();
@@ -53,7 +54,7 @@ pub fn DeployAgent(id: String) -> Element {
 
             *is_saving.write() = true;
             spawn(async move {
-                if crate::server_fns::update_agent(id, name, specialty, send_opt, recv_opt).await.is_ok() {
+                if crate::server_fns::update_agent(id, name, specialty, send_opt, recv_opt, personality).await.is_ok() {
                     agents_resource.restart();
                 }
                 *is_saving.write() = false;

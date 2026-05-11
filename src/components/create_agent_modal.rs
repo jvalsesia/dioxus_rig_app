@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_i18n::{t, prelude::*};
 use std::collections::HashSet;
-use crate::{Agent, Skill};
+use crate::{Agent, Personality, Skill};
 
 #[derive(Props, Clone, PartialEq)]
 pub struct CreateAgentModalProps {
@@ -25,6 +25,7 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
     let mut new_specialty = use_signal(String::new);
     let mut selected = use_signal(HashSet::<String>::new);
     let mut is_loading = use_signal(|| false);
+    let mut personality = use_signal(Personality::default);
 
     let input_cls = "w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500/50 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-500/20 transition-all";
 
@@ -35,9 +36,10 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
             return;
         }
         let skill_ids: Vec<String> = selected.read().iter().cloned().collect();
+        let p = *personality.read();
         *is_loading.write() = true;
         spawn(async move {
-            match crate::server_fns::add_agent(name, specialty).await {
+            match crate::server_fns::add_agent(name, specialty, p).await {
                 Ok(agent) => {
                     if !skill_ids.is_empty() {
                         let _ = crate::server_fns::set_agent_skills(agent.id, skill_ids).await;
@@ -58,7 +60,7 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
 
     rsx! {
         div { class: "fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50",
-            div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-5 shadow-2xl max-h-[90vh]",
+            div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-5 shadow-2xl max-h-[90vh] overflow-y-auto chat-scroll",
 
                 // Header
                 div { class: "flex items-center justify-between shrink-0",
@@ -91,6 +93,17 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
                         oninput: move |evt| *new_specialty.write() = evt.value(),
                         rows: 3
                     }
+                }
+
+                // Personality (Five-Factor) sliders
+                div { class: "flex flex-col gap-2",
+                    label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-personality")} }
+                    p { class: "text-[11px] text-zinc-500 -mt-1", {t!("create-modal-personality-hint")} }
+                    PersonalitySlider { label: t!("trait-openness"), low: t!("trait-openness-low"), high: t!("trait-openness-high"), value: personality.read().openness, on_change: move |v| personality.write().openness = v }
+                    PersonalitySlider { label: t!("trait-conscientiousness"), low: t!("trait-conscientiousness-low"), high: t!("trait-conscientiousness-high"), value: personality.read().conscientiousness, on_change: move |v| personality.write().conscientiousness = v }
+                    PersonalitySlider { label: t!("trait-extraversion"), low: t!("trait-extraversion-low"), high: t!("trait-extraversion-high"), value: personality.read().extraversion, on_change: move |v| personality.write().extraversion = v }
+                    PersonalitySlider { label: t!("trait-agreeableness"), low: t!("trait-agreeableness-low"), high: t!("trait-agreeableness-high"), value: personality.read().agreeableness, on_change: move |v| personality.write().agreeableness = v }
+                    PersonalitySlider { label: t!("trait-emotional-stability"), low: t!("trait-emotional-stability-low"), high: t!("trait-emotional-stability-high"), value: personality.read().emotional_stability, on_change: move |v| personality.write().emotional_stability = v }
                 }
 
                 // Skills picker
@@ -143,6 +156,45 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
                     disabled: *is_loading.read(),
                     if *is_loading.read() { {t!("create-modal-creating")} } else { {t!("create-modal-submit")} }
                 }
+            }
+        }
+    }
+}
+
+#[derive(Props, Clone, PartialEq)]
+pub struct PersonalitySliderProps {
+    pub label: String,
+    pub low: String,
+    pub high: String,
+    pub value: f32,
+    pub on_change: EventHandler<f32>,
+}
+
+#[component]
+pub fn PersonalitySlider(props: PersonalitySliderProps) -> Element {
+    let pct = (props.value * 100.0).round() as i32;
+    rsx! {
+        div { class: "flex flex-col gap-1",
+            div { class: "flex items-center justify-between",
+                span { class: "text-xs font-semibold text-zinc-700 dark:text-zinc-200", "{props.label}" }
+                span { class: "text-[11px] text-zinc-500 tabular-nums", "{pct}" }
+            }
+            input {
+                r#type: "range",
+                min: "0",
+                max: "100",
+                step: "1",
+                value: "{pct}",
+                class: "w-full accent-violet-600 cursor-pointer",
+                oninput: move |evt| {
+                    if let Ok(v) = evt.value().parse::<f32>() {
+                        props.on_change.call(v / 100.0);
+                    }
+                },
+            }
+            div { class: "flex items-center justify-between text-[10px] text-zinc-400",
+                span { "{props.low}" }
+                span { "{props.high}" }
             }
         }
     }

@@ -1,4 +1,5 @@
-use crate::{Agent, Route, Skill};
+use crate::{Agent, Personality, Route, Skill};
+use crate::components::create_agent_modal::PersonalitySlider;
 use dioxus::prelude::*;
 use dioxus_i18n::{t, prelude::*};
 use std::collections::HashSet;
@@ -25,6 +26,7 @@ pub fn ManageAgent(id: String) -> Element {
     let mut edit_mode = use_signal(|| false);
     let mut edit_name = use_signal(|| agent.name.clone());
     let mut edit_specialty = use_signal(|| agent.specialty.clone());
+    let mut edit_personality = use_signal(|| agent.personality);
     let mut is_saving = use_signal(|| false);
 
     let delete_agent = {
@@ -50,10 +52,11 @@ pub fn ManageAgent(id: String) -> Element {
             let specialty = edit_specialty.read().clone();
             let send_opt = existing_send.clone();
             let recv_opt = existing_receive.clone();
+            let p = *edit_personality.read();
 
             *is_saving.write() = true;
             spawn(async move {
-                if crate::server_fns::update_agent(id, name, specialty, send_opt, recv_opt).await.is_ok() {
+                if crate::server_fns::update_agent(id, name, specialty, send_opt, recv_opt, p).await.is_ok() {
                     agents_resource.restart();
                     *edit_mode.write() = false;
                 }
@@ -100,6 +103,15 @@ pub fn ManageAgent(id: String) -> Element {
                             }
                         }
 
+                        div { class: "flex flex-col gap-2",
+                            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-personality")} }
+                            PersonalitySlider { label: t!("trait-openness"), low: t!("trait-openness-low"), high: t!("trait-openness-high"), value: edit_personality.read().openness, on_change: move |v| edit_personality.write().openness = v }
+                            PersonalitySlider { label: t!("trait-conscientiousness"), low: t!("trait-conscientiousness-low"), high: t!("trait-conscientiousness-high"), value: edit_personality.read().conscientiousness, on_change: move |v| edit_personality.write().conscientiousness = v }
+                            PersonalitySlider { label: t!("trait-extraversion"), low: t!("trait-extraversion-low"), high: t!("trait-extraversion-high"), value: edit_personality.read().extraversion, on_change: move |v| edit_personality.write().extraversion = v }
+                            PersonalitySlider { label: t!("trait-agreeableness"), low: t!("trait-agreeableness-low"), high: t!("trait-agreeableness-high"), value: edit_personality.read().agreeableness, on_change: move |v| edit_personality.write().agreeableness = v }
+                            PersonalitySlider { label: t!("trait-emotional-stability"), low: t!("trait-emotional-stability-low"), high: t!("trait-emotional-stability-high"), value: edit_personality.read().emotional_stability, on_change: move |v| edit_personality.write().emotional_stability = v }
+                        }
+
                         div { class: "flex gap-3",
                             button {
                                 class: "bg-violet-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
@@ -116,6 +128,8 @@ pub fn ManageAgent(id: String) -> Element {
                     } else {
                         h2 { class: "text-3xl font-bold text-zinc-900 dark:text-zinc-100", "{agent.name}" }
                         p { class: "text-zinc-500 leading-relaxed", "{agent.specialty}" }
+
+                        PersonalityReadout { personality: agent.personality }
 
                         div { class: "flex gap-3",
                             Link {
@@ -263,6 +277,34 @@ fn AgentSkills(agent_id: String) -> Element {
                     }
                 }
             }
+        }
+    }
+}
+
+#[component]
+fn PersonalityReadout(personality: Personality) -> Element {
+    let row = |label: String, v: f32| {
+        let pct = (v * 100.0).round() as i32;
+        rsx! {
+            div { class: "flex flex-col gap-1",
+                div { class: "flex items-center justify-between",
+                    span { class: "text-xs font-medium text-zinc-600 dark:text-zinc-300", "{label}" }
+                    span { class: "text-[11px] text-zinc-500 tabular-nums", "{pct}" }
+                }
+                div { class: "h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden",
+                    div { class: "h-full bg-violet-500", style: "width: {pct}%;" }
+                }
+            }
+        }
+    };
+    rsx! {
+        div { class: "flex flex-col gap-2 mt-2",
+            label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-personality")} }
+            {row(t!("trait-openness"), personality.openness)}
+            {row(t!("trait-conscientiousness"), personality.conscientiousness)}
+            {row(t!("trait-extraversion"), personality.extraversion)}
+            {row(t!("trait-agreeableness"), personality.agreeableness)}
+            {row(t!("trait-emotional-stability"), personality.emotional_stability)}
         }
     }
 }

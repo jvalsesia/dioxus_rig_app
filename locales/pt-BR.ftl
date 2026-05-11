@@ -76,6 +76,24 @@ create-modal-creating = Criando...
 create-modal-submit = Criar Agente
 create-modal-skills = Habilidades
 create-modal-skills-empty = Nenhuma habilidade disponível ainda.
+create-modal-personality = Personalidade (Cinco Fatores)
+create-modal-personality-hint = Define o tom e a voz do agente. Os padrões são neutros.
+
+trait-openness = Abertura
+trait-openness-low = Prático
+trait-openness-high = Imaginativo
+trait-conscientiousness = Conscienciosidade
+trait-conscientiousness-low = Espontâneo
+trait-conscientiousness-high = Organizado
+trait-extraversion = Extroversão
+trait-extraversion-low = Reservado
+trait-extraversion-high = Sociável
+trait-agreeableness = Amabilidade
+trait-agreeableness-low = Direto
+trait-agreeableness-high = Caloroso
+trait-emotional-stability = Estabilidade Emocional
+trait-emotional-stability-low = Sensível
+trait-emotional-stability-high = Sereno
 
 manage-back = ← Voltar ao Painel
 manage-edit-title = Editar Agente

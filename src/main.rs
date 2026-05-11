@@ -33,6 +33,58 @@ pub enum Route {
     Skills {},
 }
 
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
+pub struct Personality {
+    pub openness: f32,
+    pub conscientiousness: f32,
+    pub extraversion: f32,
+    pub agreeableness: f32,
+    pub emotional_stability: f32,
+}
+
+impl Default for Personality {
+    fn default() -> Self {
+        Self {
+            openness: 0.5,
+            conscientiousness: 0.5,
+            extraversion: 0.5,
+            agreeableness: 0.5,
+            emotional_stability: 0.5,
+        }
+    }
+}
+
+impl Personality {
+    /// Build a natural-language descriptor block appended to the agent's
+    /// specialty so the LLM adopts a consistent voice grounded in the
+    /// Five-Factor (OCEAN) model.
+    pub fn describe(&self) -> String {
+        fn line(label: &str, low: &str, high: &str, v: f32) -> Option<String> {
+            if (v - 0.5).abs() < 0.15 {
+                return None;
+            }
+            let intensity = if v >= 0.85 || v <= 0.15 { "very " } else { "" };
+            let word = if v > 0.5 { high } else { low };
+            Some(format!("- {}: {}{}", label, intensity, word))
+        }
+        let mut lines = Vec::new();
+        if let Some(l) = line("Openness", "conventional and practical", "curious, imaginative, open to new ideas", self.openness) { lines.push(l); }
+        if let Some(l) = line("Conscientiousness", "spontaneous and flexible", "organized, diligent, detail-oriented", self.conscientiousness) { lines.push(l); }
+        if let Some(l) = line("Extraversion", "reserved and reflective", "outgoing, energetic, talkative", self.extraversion) { lines.push(l); }
+        if let Some(l) = line("Agreeableness", "blunt and challenging", "warm, cooperative, empathetic", self.agreeableness) { lines.push(l); }
+        if let Some(l) = line("Emotional Stability", "sensitive and intense", "calm, composed, resilient under pressure", self.emotional_stability) { lines.push(l); }
+        if lines.is_empty() {
+            String::new()
+        } else {
+            format!("\n\nPersonality traits (Five-Factor Model) you must consistently express in tone and word choice:\n{}", lines.join("\n"))
+        }
+    }
+}
+
+pub fn compose_preamble(specialty: &str, personality: &Personality) -> String {
+    format!("{}{}", specialty, personality.describe())
+}
+
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Agent {
     pub id: String,
@@ -40,6 +92,8 @@ pub struct Agent {
     pub specialty: String,
     pub n8n_webhook_send: Option<String>,
     pub n8n_webhook_receive: Option<String>,
+    #[serde(default)]
+    pub personality: Personality,
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]

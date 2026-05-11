@@ -76,6 +76,24 @@ create-modal-creating = Creating...
 create-modal-submit = Create Agent
 create-modal-skills = Skills
 create-modal-skills-empty = No skills available yet.
+create-modal-personality = Personality (Five-Factor)
+create-modal-personality-hint = Shapes the agent's tone and voice. Defaults are neutral.
+
+trait-openness = Openness
+trait-openness-low = Practical
+trait-openness-high = Imaginative
+trait-conscientiousness = Conscientiousness
+trait-conscientiousness-low = Spontaneous
+trait-conscientiousness-high = Organized
+trait-extraversion = Extraversion
+trait-extraversion-low = Reserved
+trait-extraversion-high = Outgoing
+trait-agreeableness = Agreeableness
+trait-agreeableness-low = Blunt
+trait-agreeableness-high = Warm
+trait-emotional-stability = Emotional Stability
+trait-emotional-stability-low = Sensitive
+trait-emotional-stability-high = Composed
 
 manage-back = ← Back to Dashboard
 manage-edit-title = Edit Agent

@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::{Agent, Skill};
+use crate::{Agent, Personality, Skill};
 
 #[server]
 pub async fn chat_with_agent(prompt: String, preamble: String) -> Result<String, ServerFnError> {
@@ -25,16 +25,15 @@ pub async fn chat_with_agent(prompt: String, preamble: String) -> Result<String,
 async fn get_or_create_table(lang: &str) -> Result<lancedb::Table, ServerFnError> {
     use lancedb::connect;
     use arrow_schema::{Schema, Field, DataType};
-    use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
+    use arrow_array::{StringArray, Float32Array, RecordBatch, RecordBatchIterator};
     use std::sync::Arc;
     use uuid::Uuid;
-    
-    // Ensure the data directory exists
+
     let db = connect("data/lancedb").execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    
+
     let table_names = db.table_names().execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    if table_names.contains(&"agents_v2".to_string()) {
-        return db.open_table("agents_v2").execute().await.map_err(|e| ServerFnError::new(e.to_string()));
+    if table_names.contains(&"agents_v3".to_string()) {
+        return db.open_table("agents_v3").execute().await.map_err(|e| ServerFnError::new(e.to_string()));
     }
 
     let schema = Arc::new(Schema::new(vec![
@@ -43,26 +42,36 @@ async fn get_or_create_table(lang: &str) -> Result<lancedb::Table, ServerFnError
         Field::new("specialty", DataType::Utf8, false),
         Field::new("n8n_webhook_send", DataType::Utf8, true),
         Field::new("n8n_webhook_receive", DataType::Utf8, true),
+        Field::new("openness", DataType::Float32, false),
+        Field::new("conscientiousness", DataType::Float32, false),
+        Field::new("extraversion", DataType::Float32, false),
+        Field::new("agreeableness", DataType::Float32, false),
+        Field::new("emotional_stability", DataType::Float32, false),
     ]));
 
     let name = if lang == "pt-BR" { "Assistente Geral" } else { "General Assistant" };
     let spec = if lang == "pt-BR" { "Você é um assistente geral de IA prestativo, amigável e altamente capaz. Você fornece respostas concisas e precisas." } else { "You are a helpful, friendly, and highly capable general AI assistant. You provide concise and accurate answers." };
 
     let id = Uuid::new_v4().to_string();
-    let id_array = Arc::new(StringArray::from(vec![id]));
-    let name_array = Arc::new(StringArray::from(vec![name.to_string()]));
-    let spec_array = Arc::new(StringArray::from(vec![spec.to_string()]));
-    let send_array = Arc::new(StringArray::from(vec![Option::<String>::None]));
-    let recv_array = Arc::new(StringArray::from(vec![Option::<String>::None]));
-    
     let batch = RecordBatch::try_new(
         schema.clone(),
-        vec![id_array as _, name_array as _, spec_array as _, send_array as _, recv_array as _]
+        vec![
+            Arc::new(StringArray::from(vec![id])) as _,
+            Arc::new(StringArray::from(vec![name.to_string()])) as _,
+            Arc::new(StringArray::from(vec![spec.to_string()])) as _,
+            Arc::new(StringArray::from(vec![Option::<String>::None])) as _,
+            Arc::new(StringArray::from(vec![Option::<String>::None])) as _,
+            Arc::new(Float32Array::from(vec![0.7f32])) as _,
+            Arc::new(Float32Array::from(vec![0.7f32])) as _,
+            Arc::new(Float32Array::from(vec![0.6f32])) as _,
+            Arc::new(Float32Array::from(vec![0.8f32])) as _,
+            Arc::new(Float32Array::from(vec![0.8f32])) as _,
+        ],
     ).map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let reader = Box::new(RecordBatchIterator::new(vec![Ok(batch)], schema.clone())) as Box<dyn arrow_array::RecordBatchReader + Send>;
-    let table = db.create_table("agents_v2", reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    
+    let table = db.create_table("agents_v3", reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
     Ok(table)
 }
 
@@ -79,13 +88,18 @@ pub async fn get_agents(lang: String) -> Result<Vec<Agent>, ServerFnError> {
     while let Some(batch_result) = stream.next().await {
         let batch = batch_result.map_err(|e| ServerFnError::new(e.to_string()))?;
         
-        use arrow_array::{StringArray, Array};
+        use arrow_array::{StringArray, Float32Array, Array};
         let ids = batch.column(0).as_any().downcast_ref::<StringArray>().unwrap();
         let names = batch.column(1).as_any().downcast_ref::<StringArray>().unwrap();
         let specialties = batch.column(2).as_any().downcast_ref::<StringArray>().unwrap();
         let sends = batch.column(3).as_any().downcast_ref::<StringArray>().unwrap();
         let recvs = batch.column(4).as_any().downcast_ref::<StringArray>().unwrap();
-        
+        let openness = batch.column(5).as_any().downcast_ref::<Float32Array>().unwrap();
+        let conscientiousness = batch.column(6).as_any().downcast_ref::<Float32Array>().unwrap();
+        let extraversion = batch.column(7).as_any().downcast_ref::<Float32Array>().unwrap();
+        let agreeableness = batch.column(8).as_any().downcast_ref::<Float32Array>().unwrap();
+        let emotional_stability = batch.column(9).as_any().downcast_ref::<Float32Array>().unwrap();
+
         for i in 0..batch.num_rows() {
             let n8n_webhook_send = if sends.is_null(i) { None } else { Some(sends.value(i).to_string()) };
             let n8n_webhook_receive = if recvs.is_null(i) { None } else { Some(recvs.value(i).to_string()) };
@@ -96,6 +110,13 @@ pub async fn get_agents(lang: String) -> Result<Vec<Agent>, ServerFnError> {
                 specialty: specialties.value(i).to_string(),
                 n8n_webhook_send,
                 n8n_webhook_receive,
+                personality: Personality {
+                    openness: openness.value(i),
+                    conscientiousness: conscientiousness.value(i),
+                    extraversion: extraversion.value(i),
+                    agreeableness: agreeableness.value(i),
+                    emotional_stability: emotional_stability.value(i),
+                },
             });
         }
     }
@@ -104,30 +125,35 @@ pub async fn get_agents(lang: String) -> Result<Vec<Agent>, ServerFnError> {
 }
 
 #[server]
-pub async fn add_agent(name: String, specialty: String) -> Result<Agent, ServerFnError> {
-    use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
+pub async fn add_agent(name: String, specialty: String, personality: Personality) -> Result<Agent, ServerFnError> {
+    use arrow_array::{StringArray, Float32Array, RecordBatch, RecordBatchIterator};
     use std::sync::Arc;
     use uuid::Uuid;
 
     let table = get_or_create_table("en-US").await?;
     let schema = table.schema().await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    
+
     let id = Uuid::new_v4().to_string();
-    let id_array = Arc::new(StringArray::from(vec![id.clone()]));
-    let name_array = Arc::new(StringArray::from(vec![name.clone()]));
-    let spec_array = Arc::new(StringArray::from(vec![specialty.clone()]));
-    let send_array = Arc::new(StringArray::from(vec![Option::<String>::None]));
-    let recv_array = Arc::new(StringArray::from(vec![Option::<String>::None]));
-    
     let batch = RecordBatch::try_new(
         schema.clone(),
-        vec![id_array as _, name_array as _, spec_array as _, send_array as _, recv_array as _]
+        vec![
+            Arc::new(StringArray::from(vec![id.clone()])) as _,
+            Arc::new(StringArray::from(vec![name.clone()])) as _,
+            Arc::new(StringArray::from(vec![specialty.clone()])) as _,
+            Arc::new(StringArray::from(vec![Option::<String>::None])) as _,
+            Arc::new(StringArray::from(vec![Option::<String>::None])) as _,
+            Arc::new(Float32Array::from(vec![personality.openness])) as _,
+            Arc::new(Float32Array::from(vec![personality.conscientiousness])) as _,
+            Arc::new(Float32Array::from(vec![personality.extraversion])) as _,
+            Arc::new(Float32Array::from(vec![personality.agreeableness])) as _,
+            Arc::new(Float32Array::from(vec![personality.emotional_stability])) as _,
+        ],
     ).map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let reader = Box::new(RecordBatchIterator::new(vec![Ok(batch)], schema.clone())) as Box<dyn arrow_array::RecordBatchReader + Send>;
     table.add(reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    
-    Ok(Agent { id, name, specialty, n8n_webhook_send: None, n8n_webhook_receive: None })
+
+    Ok(Agent { id, name, specialty, n8n_webhook_send: None, n8n_webhook_receive: None, personality })
 }
 
 #[server]
@@ -138,30 +164,35 @@ pub async fn delete_agent(id: String) -> Result<(), ServerFnError> {
 }
 
 #[server]
-pub async fn update_agent(id: String, name: String, specialty: String, n8n_webhook_send: Option<String>, n8n_webhook_receive: Option<String>) -> Result<Agent, ServerFnError> {
-    use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
+pub async fn update_agent(id: String, name: String, specialty: String, n8n_webhook_send: Option<String>, n8n_webhook_receive: Option<String>, personality: Personality) -> Result<Agent, ServerFnError> {
+    use arrow_array::{StringArray, Float32Array, RecordBatch, RecordBatchIterator};
     use std::sync::Arc;
 
     let table = get_or_create_table("en-US").await?;
     let schema = table.schema().await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    
+
     table.delete(&format!("id = '{}'", id)).await.map_err(|e| ServerFnError::new(e.to_string()))?;
 
-    let id_array = Arc::new(StringArray::from(vec![id.clone()]));
-    let name_array = Arc::new(StringArray::from(vec![name.clone()]));
-    let spec_array = Arc::new(StringArray::from(vec![specialty.clone()]));
-    let send_array = Arc::new(StringArray::from(vec![n8n_webhook_send.clone()]));
-    let recv_array = Arc::new(StringArray::from(vec![n8n_webhook_receive.clone()]));
-    
     let batch = RecordBatch::try_new(
         schema.clone(),
-        vec![id_array as _, name_array as _, spec_array as _, send_array as _, recv_array as _]
+        vec![
+            Arc::new(StringArray::from(vec![id.clone()])) as _,
+            Arc::new(StringArray::from(vec![name.clone()])) as _,
+            Arc::new(StringArray::from(vec![specialty.clone()])) as _,
+            Arc::new(StringArray::from(vec![n8n_webhook_send.clone()])) as _,
+            Arc::new(StringArray::from(vec![n8n_webhook_receive.clone()])) as _,
+            Arc::new(Float32Array::from(vec![personality.openness])) as _,
+            Arc::new(Float32Array::from(vec![personality.conscientiousness])) as _,
+            Arc::new(Float32Array::from(vec![personality.extraversion])) as _,
+            Arc::new(Float32Array::from(vec![personality.agreeableness])) as _,
+            Arc::new(Float32Array::from(vec![personality.emotional_stability])) as _,
+        ],
     ).map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let reader = Box::new(RecordBatchIterator::new(vec![Ok(batch)], schema.clone())) as Box<dyn arrow_array::RecordBatchReader + Send>;
     table.add(reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    
-    Ok(Agent { id, name, specialty, n8n_webhook_send, n8n_webhook_receive })
+
+    Ok(Agent { id, name, specialty, n8n_webhook_send, n8n_webhook_receive, personality })
 }
 
 #[server]

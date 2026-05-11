@@ -1,4 +1,4 @@
-use crate::{Agent, Route};
+use crate::{compose_preamble, Agent, Personality, Route};
 use crate::server_fns::chat_with_agent;
 use dioxus::prelude::*;
 use dioxus_i18n::t;
@@ -17,13 +17,14 @@ pub fn Chat(id: String) -> Element {
         agents.iter().find(|a| a.id == id).cloned()
     });
 
-    let (agent_name, agent_specialty) = match agent_opt {
-        Some(a) => (a.name, a.specialty),
-        None => (t!("unknown-agent"), t!("unknown-specialty")),
+    let (agent_name, agent_specialty, agent_personality) = match agent_opt {
+        Some(a) => (a.name, a.specialty, a.personality),
+        None => (t!("unknown-agent"), t!("unknown-specialty"), Personality::default()),
     };
 
-    let specialty_for_keydown = agent_specialty.clone();
-    let specialty_for_click = agent_specialty.clone();
+    let preamble = compose_preamble(&agent_specialty, &agent_personality);
+    let preamble_for_keydown = preamble.clone();
+    let preamble_for_click = preamble.clone();
     let name_clone = agent_name.clone();
 
     let messages = use_signal(|| {
@@ -39,7 +40,7 @@ pub fn Chat(id: String) -> Element {
     let do_submit = move |mut messages: Signal<Vec<Message>>,
                           mut current_input: Signal<String>,
                           mut is_loading: Signal<bool>,
-                          specialty: String| {
+                          preamble: String| {
         let text = current_input.read().clone();
         if text.trim().is_empty() {
             return;
@@ -49,7 +50,7 @@ pub fn Chat(id: String) -> Element {
         *is_loading.write() = true;
 
         spawn(async move {
-            match chat_with_agent(text, specialty).await {
+            match chat_with_agent(text, preamble).await {
                 Ok(response) => messages.write().push(Message {
                     role: "assistant".to_string(),
                     content: response,
@@ -134,17 +135,17 @@ pub fn Chat(id: String) -> Element {
                     value: "{current_input}",
                     oninput: move |evt| *current_input.write() = evt.value(),
                     onkeydown: move |evt| {
-                        let spec = specialty_for_keydown.clone();
+                        let pre = preamble_for_keydown.clone();
                         if evt.key() == Key::Enter {
-                            do_submit(messages, current_input, is_loading, spec);
+                            do_submit(messages, current_input, is_loading, pre);
                         }
                     }
                 }
                 button {
                     class: "bg-violet-600 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0",
                     onclick: move |_| {
-                        let spec = specialty_for_click.clone();
-                        do_submit(messages, current_input, is_loading, spec);
+                        let pre = preamble_for_click.clone();
+                        do_submit(messages, current_input, is_loading, pre);
                     },
                     disabled: *is_loading.read(),
                     {t!("chat-send")}
