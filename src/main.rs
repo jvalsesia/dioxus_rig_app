@@ -42,6 +42,14 @@ pub struct Agent {
     pub n8n_webhook_receive: Option<String>,
 }
 
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub struct Skill {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub category: String,
+}
+
 fn main() {
     dioxus::launch(App);
 }

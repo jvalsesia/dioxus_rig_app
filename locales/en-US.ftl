@@ -13,6 +13,20 @@ skills-found = {$count} skills found
 skills-add = + Add
 skills-added = ✓ Added
 skills-footer = Added skills will be used by the agent during conversations.
+skills-new = + New Skill
+skills-delete = Delete
+skills-loading = Loading skills...
+skills-empty = No skills yet. Create your first one.
+
+skill-modal-title = Create a New Skill
+skill-modal-name = Name
+skill-modal-name-placeholder = e.g., Search information
+skill-modal-description = Description
+skill-modal-description-placeholder = What does this skill do?
+skill-modal-category = Category
+skill-modal-creating = Creating...
+skill-modal-submit = Create Skill
+skill-modal-cancel = Cancel
 
 skill-cat-research = Research
 skill-cat-utilities = Utilities

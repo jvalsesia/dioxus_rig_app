@@ -13,6 +13,20 @@ skills-found = {$count} habilidades encontradas
 skills-add = + Adicionar
 skills-added = ✓ Adicionada
 skills-footer = As habilidades adicionadas serão usadas pelo agente durante as conversas.
+skills-new = + Nova Habilidade
+skills-delete = Excluir
+skills-loading = Carregando habilidades...
+skills-empty = Nenhuma habilidade ainda. Crie a primeira.
+
+skill-modal-title = Criar uma Nova Habilidade
+skill-modal-name = Nome
+skill-modal-name-placeholder = ex: Buscar informações
+skill-modal-description = Descrição
+skill-modal-description-placeholder = O que essa habilidade faz?
+skill-modal-category = Categoria
+skill-modal-creating = Criando...
+skill-modal-submit = Criar Habilidade
+skill-modal-cancel = Cancelar
 
 skill-cat-research = Pesquisa
 skill-cat-utilities = Utilitários

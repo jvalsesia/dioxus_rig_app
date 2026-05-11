@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::Agent;
+use crate::{Agent, Skill};
 
 #[server]
 pub async fn chat_with_agent(prompt: String, preamble: String) -> Result<String, ServerFnError> {
@@ -214,6 +214,139 @@ pub async fn verify_evolution_instance(url: String, api_key: String, instance: S
     } else {
         Err(ServerFnError::new(format!("Status {}", res.status())))
     }
+}
+
+#[cfg(feature = "server")]
+fn default_skill_seeds(lang: &str) -> Vec<(String, String, String, String)> {
+    use uuid::Uuid;
+    let pt = lang == "pt-BR";
+    let s = |name_en: &str, name_pt: &str, desc_en: &str, desc_pt: &str, cat: &str| {
+        (
+            Uuid::new_v4().to_string(),
+            if pt { name_pt.to_string() } else { name_en.to_string() },
+            if pt { desc_pt.to_string() } else { desc_en.to_string() },
+            cat.to_string(),
+        )
+    };
+    vec![
+        s("Search information", "Buscar informações", "Searches and returns information from documents, knowledge bases or the web.", "Pesquisa e retorna informações de documentos, bases de conhecimento ou da web.", "research"),
+        s("Perform calculations", "Realizar cálculos", "Performs mathematical and financial calculations accurately.", "Executa cálculos matemáticos e financeiros com precisão.", "utilities"),
+        s("Check schedule", "Consultar agenda", "Checks appointments, events and time availability.", "Consulta compromissos, eventos e disponibilidade de horários.", "productivity"),
+        s("Send email", "Enviar e-mail", "Composes and sends emails through configured accounts.", "Redige e envia e-mails através de contas configuradas.", "communication"),
+        s("Query data (API)", "Consultar dados (API)", "Queries data in external systems through integrated APIs.", "Consulta dados em sistemas externos via APIs integradas.", "integrations"),
+        s("Summarize documents", "Resumir documentos", "Generates concise summaries from long texts and documents.", "Gera resumos concisos a partir de textos e documentos longos.", "research"),
+        s("Translate texts", "Traduzir textos", "Translates content between multiple languages with contextual accuracy.", "Traduz conteúdos entre múltiplos idiomas com precisão contextual.", "communication"),
+        s("Generate reports", "Gerar relatórios", "Compiles data and generates structured reports on demand.", "Compila dados e gera relatórios estruturados sob demanda.", "productivity"),
+        s("Sentiment analysis", "Análise de sentimento", "Identifies the emotional tone of messages and reviews.", "Identifica o tom emocional de mensagens e avaliações.", "research"),
+        s("Schedule meetings", "Agendar reuniões", "Creates and manages calendar events automatically.", "Cria e gerencia eventos no calendário automaticamente.", "productivity"),
+        s("Send SMS", "Enviar SMS", "Sends SMS messages through configured providers.", "Envia mensagens SMS através de provedores configurados.", "communication"),
+        s("Custom webhooks", "Webhooks personalizados", "Triggers webhooks to external systems based on events.", "Dispara webhooks para sistemas externos baseado em eventos.", "integrations"),
+    ]
+}
+
+#[cfg(feature = "server")]
+async fn get_or_create_skills_table(lang: &str) -> Result<lancedb::Table, ServerFnError> {
+    use lancedb::connect;
+    use arrow_schema::{Schema, Field, DataType};
+    use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
+    use std::sync::Arc;
+
+    let db = connect("data/lancedb").execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let table_names = db.table_names().execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    if table_names.contains(&"skills_v1".to_string()) {
+        return db.open_table("skills_v1").execute().await.map_err(|e| ServerFnError::new(e.to_string()));
+    }
+
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("id", DataType::Utf8, false),
+        Field::new("name", DataType::Utf8, false),
+        Field::new("description", DataType::Utf8, false),
+        Field::new("category", DataType::Utf8, false),
+    ]));
+
+    let seeds = default_skill_seeds(lang);
+    let ids: Vec<String> = seeds.iter().map(|t| t.0.clone()).collect();
+    let names: Vec<String> = seeds.iter().map(|t| t.1.clone()).collect();
+    let descs: Vec<String> = seeds.iter().map(|t| t.2.clone()).collect();
+    let cats: Vec<String> = seeds.iter().map(|t| t.3.clone()).collect();
+
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(StringArray::from(ids)) as _,
+            Arc::new(StringArray::from(names)) as _,
+            Arc::new(StringArray::from(descs)) as _,
+            Arc::new(StringArray::from(cats)) as _,
+        ],
+    ).map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let reader = Box::new(RecordBatchIterator::new(vec![Ok(batch)], schema.clone())) as Box<dyn arrow_array::RecordBatchReader + Send>;
+    let table = db.create_table("skills_v1", reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    Ok(table)
+}
+
+#[server]
+pub async fn get_skills(lang: String) -> Result<Vec<Skill>, ServerFnError> {
+    use lancedb::query::ExecutableQuery;
+    use futures::StreamExt;
+    use arrow_array::{StringArray, Array};
+
+    let table = get_or_create_skills_table(&lang).await?;
+    let mut stream = table.query().execute().await.map_err(|e: lancedb::Error| ServerFnError::new(e.to_string()))?;
+    let mut skills = Vec::new();
+
+    while let Some(batch_result) = stream.next().await {
+        let batch = batch_result.map_err(|e| ServerFnError::new(e.to_string()))?;
+        let ids = batch.column(0).as_any().downcast_ref::<StringArray>().unwrap();
+        let names = batch.column(1).as_any().downcast_ref::<StringArray>().unwrap();
+        let descs = batch.column(2).as_any().downcast_ref::<StringArray>().unwrap();
+        let cats = batch.column(3).as_any().downcast_ref::<StringArray>().unwrap();
+        for i in 0..batch.num_rows() {
+            skills.push(Skill {
+                id: ids.value(i).to_string(),
+                name: names.value(i).to_string(),
+                description: descs.value(i).to_string(),
+                category: cats.value(i).to_string(),
+            });
+        }
+    }
+
+    Ok(skills)
+}
+
+#[server]
+pub async fn add_skill(name: String, description: String, category: String) -> Result<Skill, ServerFnError> {
+    use arrow_array::{StringArray, RecordBatch, RecordBatchIterator};
+    use std::sync::Arc;
+    use uuid::Uuid;
+
+    let table = get_or_create_skills_table("en-US").await?;
+    let schema = table.schema().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let id = Uuid::new_v4().to_string();
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(StringArray::from(vec![id.clone()])) as _,
+            Arc::new(StringArray::from(vec![name.clone()])) as _,
+            Arc::new(StringArray::from(vec![description.clone()])) as _,
+            Arc::new(StringArray::from(vec![category.clone()])) as _,
+        ],
+    ).map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let reader = Box::new(RecordBatchIterator::new(vec![Ok(batch)], schema.clone())) as Box<dyn arrow_array::RecordBatchReader + Send>;
+    table.add(reader).execute().await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    Ok(Skill { id, name, description, category })
+}
+
+#[server]
+pub async fn delete_skill(id: String) -> Result<(), ServerFnError> {
+    let table = get_or_create_skills_table("en-US").await?;
+    table.delete(&format!("id = '{}'", id)).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+    Ok(())
 }
 
 #[server]
