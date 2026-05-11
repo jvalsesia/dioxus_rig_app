@@ -49,7 +49,12 @@ pub fn AgentList() -> Element {
 
 #[component]
 fn AgentCard(agent: Agent) -> Element {
-    let initial = agent.name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_else(|| "·".into());
+    let initial = agent
+        .name
+        .chars()
+        .next()
+        .map(|c| c.to_uppercase().to_string())
+        .unwrap_or_else(|| "·".into());
     rsx! {
         article { class: "group relative bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-1 transition-all reveal",
 
@@ -70,8 +75,8 @@ fn AgentCard(agent: Agent) -> Element {
                     h3 { class: "font-display font-semibold text-2xl text-zinc-900 dark:text-zinc-100 leading-tight truncate tracking-tight",
                         "{agent.name}"
                     }
-                    p { class: "font-mono text-[10px] tracking-wider uppercase text-zinc-500 mt-1",
-                        "agent · OCEAN-tuned"
+                    p { class: "font-mono text-[10px] track ing-wider uppercase text-zinc-500 mt-1",
+                        "agent ID: {agent.id}"
                     }
                 }
             }
