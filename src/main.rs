@@ -9,6 +9,7 @@ pub mod server_fns;
 
 use components::agent_list::AgentList;
 use components::chat::Chat;
+use components::create_agent::CreateAgent;
 use components::deploy_agent::DeployAgent;
 use components::manage_agent::ManageAgent;
 use components::sidebar_layout::SidebarLayout;
@@ -31,6 +32,8 @@ pub enum Route {
     DeployAgent { id: String },
     #[route("/skills")]
     Skills {},
+    #[route("/create-agent")]
+    CreateAgent {},
 }
 
 #[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]

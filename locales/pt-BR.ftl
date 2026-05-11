@@ -67,6 +67,8 @@ agent-specialty = Especialidade: {$specialty}
 chat-btn = 💬 Conversar
 manage-btn = ⚙️ Gerenciar
 
+create-page-title = Criar um Novo Agente
+create-page-subtitle = Configure o nome, a especialidade, a personalidade e as habilidades do agente.
 create-modal-title = Criar um Novo Agente
 create-modal-name = Nome
 create-modal-name-placeholder = ex: Vendedor de Carros, Gerente de Estoque...

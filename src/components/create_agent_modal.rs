@@ -60,7 +60,7 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
 
     rsx! {
         div { class: "fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50",
-            div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-5 shadow-2xl max-h-[90vh] overflow-y-auto chat-scroll",
+            div { class: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-2xl mx-4 flex flex-col gap-5 shadow-2xl max-h-[90vh]",
 
                 // Header
                 div { class: "flex items-center justify-between shrink-0",
@@ -95,19 +95,24 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
                     }
                 }
 
+                // Personality (left) + Skills (right)
+                div { class: "grid grid-cols-2 gap-4 min-h-0",
+
                 // Personality (Five-Factor) sliders
-                div { class: "flex flex-col gap-2",
+                div { class: "flex flex-col gap-2 min-w-0",
                     label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-personality")} }
                     p { class: "text-[11px] text-zinc-500 -mt-1", {t!("create-modal-personality-hint")} }
-                    PersonalitySlider { label: t!("trait-openness"), low: t!("trait-openness-low"), high: t!("trait-openness-high"), value: personality.read().openness, on_change: move |v| personality.write().openness = v }
-                    PersonalitySlider { label: t!("trait-conscientiousness"), low: t!("trait-conscientiousness-low"), high: t!("trait-conscientiousness-high"), value: personality.read().conscientiousness, on_change: move |v| personality.write().conscientiousness = v }
-                    PersonalitySlider { label: t!("trait-extraversion"), low: t!("trait-extraversion-low"), high: t!("trait-extraversion-high"), value: personality.read().extraversion, on_change: move |v| personality.write().extraversion = v }
-                    PersonalitySlider { label: t!("trait-agreeableness"), low: t!("trait-agreeableness-low"), high: t!("trait-agreeableness-high"), value: personality.read().agreeableness, on_change: move |v| personality.write().agreeableness = v }
-                    PersonalitySlider { label: t!("trait-emotional-stability"), low: t!("trait-emotional-stability-low"), high: t!("trait-emotional-stability-high"), value: personality.read().emotional_stability, on_change: move |v| personality.write().emotional_stability = v }
+                    div { class: "chat-scroll flex flex-col gap-2 max-h-56 overflow-y-auto pr-2 rounded-lg border border-zinc-200 dark:border-zinc-800 p-2",
+                        PersonalitySlider { label: t!("trait-openness"), low: t!("trait-openness-low"), high: t!("trait-openness-high"), value: personality.read().openness, on_change: move |v| personality.write().openness = v }
+                        PersonalitySlider { label: t!("trait-conscientiousness"), low: t!("trait-conscientiousness-low"), high: t!("trait-conscientiousness-high"), value: personality.read().conscientiousness, on_change: move |v| personality.write().conscientiousness = v }
+                        PersonalitySlider { label: t!("trait-extraversion"), low: t!("trait-extraversion-low"), high: t!("trait-extraversion-high"), value: personality.read().extraversion, on_change: move |v| personality.write().extraversion = v }
+                        PersonalitySlider { label: t!("trait-agreeableness"), low: t!("trait-agreeableness-low"), high: t!("trait-agreeableness-high"), value: personality.read().agreeableness, on_change: move |v| personality.write().agreeableness = v }
+                        PersonalitySlider { label: t!("trait-emotional-stability"), low: t!("trait-emotional-stability-low"), high: t!("trait-emotional-stability-high"), value: personality.read().emotional_stability, on_change: move |v| personality.write().emotional_stability = v }
+                    }
                 }
 
                 // Skills picker
-                div { class: "flex flex-col gap-2 min-h-0",
+                div { class: "flex flex-col gap-2 min-w-0 min-h-0",
                     label { class: "text-xs font-medium text-zinc-500 uppercase tracking-wider", {t!("create-modal-skills")} }
                     if skills.is_empty() {
                         p { class: "text-xs text-zinc-500", {t!("create-modal-skills-empty")} }
@@ -147,6 +152,7 @@ pub fn CreateAgentModal(props: CreateAgentModalProps) -> Element {
                             }
                         }
                     }
+                }
                 }
 
                 // Submit

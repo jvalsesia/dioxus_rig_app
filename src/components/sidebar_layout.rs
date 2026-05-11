@@ -6,7 +6,6 @@ const LOGO: Asset = asset!("/assets/agents_wizard_logo.png");
 
 #[component]
 pub fn SidebarLayout() -> Element {
-    let mut show_create_modal = use_signal(|| false);
     let mut i18n = i18n();
     let mut is_dark = use_context::<Signal<bool>>();
 
@@ -35,9 +34,9 @@ pub fn SidebarLayout() -> Element {
                         span { class: "text-base", "🏠" }
                         {t!("nav-dashboard")}
                     }
-                    button {
-                        class: "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 border border-dashed border-violet-300 dark:border-violet-500/40 bg-violet-50 dark:bg-violet-500/5 hover:bg-violet-100 dark:hover:bg-violet-500/15 hover:border-violet-400 dark:hover:border-violet-500 transition-all cursor-pointer w-full",
-                        onclick: move |_| *show_create_modal.write() = true,
+                    Link {
+                        to: Route::CreateAgent {},
+                        class: "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 border border-dashed border-violet-300 dark:border-violet-500/40 bg-violet-50 dark:bg-violet-500/5 hover:bg-violet-100 dark:hover:bg-violet-500/15 hover:border-violet-400 dark:hover:border-violet-500 transition-all cursor-pointer w-full no-underline",
                         span { class: "text-base", "➕" }
                         {t!("nav-new-agent")}
                     }
@@ -81,13 +80,6 @@ pub fn SidebarLayout() -> Element {
             // ── Main content ─────────────────────────────────────────────────
             div { class: "flex-1 flex flex-col min-h-0 bg-zinc-50 dark:bg-zinc-950",
                 Outlet::<Route> {}
-            }
-
-            // ── Create agent modal ────────────────────────────────────────────
-            if *show_create_modal.read() {
-                crate::components::create_agent_modal::CreateAgentModal {
-                    onclose: move |_| *show_create_modal.write() = false
-                }
             }
         }
     }
